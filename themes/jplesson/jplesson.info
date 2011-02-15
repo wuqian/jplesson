@@ -1,0 +1,8 @@
+name = Jplesson
+description = Jplesson.
+version = VERSION
+core = 6.x
+engine = phptemplate
+stylesheets[all][] = style.css
+version = "6.20"
+
