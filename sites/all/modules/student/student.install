@@ -1,0 +1,54 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * install
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+/*function student_schema() {
+  $schema['students'] = array(
+    'description' => 'Stores student user data.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique user ID.',
+      ),
+      'fullname' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'User\'s fullname.',
+      ),
+      'class' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "User's class number.",
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
+  
+  return $schema;
+}*/
+
+
+/**
+ * Implementation of hook_install().
+ */
+/*function student_enable() {
+	drupal_install_schema('student');
+}
+
+function student_disable() {
+	drupal_uninstall_schema('student');
+}
+*/

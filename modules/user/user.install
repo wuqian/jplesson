@@ -149,6 +149,20 @@ function user_schema() {
         'default' => '',
         'description' => "User's password (md5 hash).",
       ),
+      'fullname' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => 'User\'s fullname.',
+      ),
+      'class' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "User's class number.",
+      ),
       'mail' => array(
         'type' => 'varchar',
         'length' => 64,
@@ -295,3 +309,24 @@ function user_schema() {
   return $schema;
 }
 
+/*function user_update_1() {
+  $ret = array();
+  db_add_field($ret, 'users', 'fullname', array(
+	  	'type' => 'varchar',
+	    'length' => 60,
+	    'not null' => FALSE,
+	    'default' => '',
+	    'description' => 'User\'s fullname.',
+	  )
+  );
+    db_add_field($ret, 'users', 'class', array(
+	  	'type' => 'varchar',
+	    'length' => 60,
+	    'not null' => FALSE,
+	    'default' => '',
+	    'description' => 'User\'s class number.',
+	  )
+  );
+  return $ret;
+}
+*/
