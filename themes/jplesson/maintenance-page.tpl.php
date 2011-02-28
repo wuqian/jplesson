@@ -19,11 +19,8 @@
     <title><?php print $head_title ?></title>
     <?php print $styles ?>
     <?php print $scripts ?>
-    <!--[if lt IE 7]>
-      <?php print phptemplate_get_ie_styles(); ?>
-    <![endif]-->
   </head>
-  <body<?php print phptemplate_body_class($left, $right); ?>>
+  <body>
 
 <!-- Layout -->
   <div id="header-region" class="clear-block"><?php print $header; ?></div>

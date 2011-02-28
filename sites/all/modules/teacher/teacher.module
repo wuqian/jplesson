@@ -1,0 +1,67 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * TODO: Enter file description here.
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function teacher_menu() { 
+  // This is the minimum information you can provide for a menu item.
+    $items['teacher'] = array(
+    'title' => '教师平台',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_admin'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+/*  $items['TODO: Enter path'] = array(
+    'title' => 'TODO: Enter menu item title',
+    'page callback' => 'TODO: Enter callback function',
+    'access arguments' => array('TODO: Enter user permissions'),
+  );
+  // more complex menu item
+  $items['TODO: Enter path'] = array(
+    'title' => 'TODO: Enter menu item title',
+    'description' => 'TODO: Enter description',
+    'page callback' => 'TODO: Enter callback function',
+    'page arguments' => '', // An array of arguments to pass to the page callback function. Integer values pass the corresponding URL component.
+    'access callback' => '', // defaults to user_access()
+    'access arguments' => array('TODO: Enter user permissions'),
+    'weight' => 0,
+    'type' => MENU_NORMAL_ITEM, // One of MENU_NORMAL_ITEM / MENU_CALLBACK / MENU_SUGGESTED_ITEM / MENU_LOCAL_TASK / MENU_DEFAULT_LOCAL_TASK
+    'menu_name' => '', // Menu to place this item in.
+    'title callback' => '', // Function to generate the title, defaults to t(). 
+    'title arguments' => '', // Arguments to send to t() or your custom callback. 
+  );*/
+  // OPTIONAL: Fill in additional static menu items
+  $items['admin/settings/teacher'] = array(
+    'title' => 'Teacher module settings',
+    'description' => 'Description of your On this date settings page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('student_admin'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+   );
+
+  return $items;
+}
+
+function teacher_admin() {
+  $form = array();
+  
+  $form['onthisdate_maxdisp'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum number of links'),
+    '#size' => 2,
+    '#maxlength' => 2,
+    '#description' => t("The maximum number of links to display in the block."),
+    '#required' => TRUE,
+  );
+
+  return system_settings_form($form);
+}
+

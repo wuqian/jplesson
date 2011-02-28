@@ -1,0 +1,4 @@
+; $Id$
+name = Student Module
+description = Student Users Module
+core = 6.x
