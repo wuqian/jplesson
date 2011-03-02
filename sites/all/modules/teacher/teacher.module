@@ -3,7 +3,7 @@
 
 /**
  * @file
- * TODO: Enter file description here.
+ * Teacher Module
  */
 
 /**
@@ -12,11 +12,153 @@
 function teacher_menu() {
   $items['teacher'] = array(
     'title' => '教师平台',
-    'page callback' => 'views_embed_view',
-    'page arguments' => array('lessonList', 'default'),
-    'access arguments' => array('access administration pages'),
+  	'description' => '发布通知、管理课程、管理作业、管理学生信息',
+    'page callback' => 'teacher_task_list',
+		'access arguments' => array('access content'), 
     'type' => MENU_NORMAL_ITEM,
   );
-
+  $items['teacher/notices/new'] = array(
+    'title' => '发布新通知',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/notices'] = array(
+    'title' => '通知管理',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/lessons/new'] = array(
+    'title' => '发布新课程',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/lessons'] = array(
+    'title' => '课程管理',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/tests/new'] = array(
+    'title' => '发布新作业',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/tests'] = array(
+    'title' => '作业管理',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/students/add'] = array(
+    'title' => '添加学生用户',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/students'] = array(
+    'title' => '学生管理',
+    'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
   return $items;
+}
+
+function teacher_perm() {
+	return array('access teacher pages');
+}
+
+function teacher_theme() {
+	return array_merge(drupal_common_theme(), array(
+    'teacher_task_list' => array(
+      'arguments' => array('menu_items' => NULL),
+    ),
+  ));
+}
+
+
+function teacher_task_list() {
+	$menu_items = array();
+  $menu_items['通知管理'] = array(
+  	'通知发布与管理', 
+  	array(
+  		l('发布新通知', 'teacher/notices/new'), 
+  		l('通知管理', 'teacher/notices/'), 
+  	),
+  );
+  $menu_items['课程管理'] = array(
+    '添加、删除、修改课程，管理课程可见性', 
+  	array(
+  		l('发布新课程', 'teacher/lessons/new'), 
+  		l('课程管理', 'teacher/lessons'), 
+  	),
+  );
+  $menu_items['作业管理'] = array(
+    '作业发布与管理、查看作业提交状态', 
+  	array(
+  		l('发布新作业', 'teacher/tests/new'), 
+  		l('作业管理', 'teacher/tests'), 
+  	),
+  );
+  $menu_items['学生管理'] = array(
+  	'学生基本信息查看与管理', 
+  	array(
+  		l('添加学生用户', 'teacher/students/add'), 
+  		l('学生管理', 'teacher/students'), 
+  	),
+  );
+  return theme('teacher_task_list', $menu_items);
+}
+
+function teacher_help($path, $arg) {
+  global $base_url;
+  switch ($path) {
+    case 'teacher':
+    	$output = '<p>'.'发布通知、管理课程、管理作业、管理学生信息'.'<p>';
+    	return $output;
+  }
+}
+
+function theme_teacher_task_list($menu_items) {
+  $stripe = 0;
+  $output = '';
+  $container = array('left' => '', 'right' => '');
+  $flip = array('left' => 'right', 'right' => 'left');
+  $position = 'left';
+
+  // Iterate over all modules
+  foreach ($menu_items as $module => $block) {
+    list($description, $items) = $block;
+
+    // Output links
+    if (count($items)) {
+      $block = array();
+      $block['title'] = $module;
+      $block['content'] = theme('item_list', $items);
+      $block['description'] = t($description);
+
+      if ($block_output = theme('admin_block', $block)) {
+        if (!isset($block['position'])) {
+          // Perform automatic striping.
+          $block['position'] = $position;
+          $position = $flip[$position];
+        }
+        $container[$block['position']] .= $block_output;
+      }
+    }
+  }
+
+  $output = '<div class="admin clear-block">';
+  foreach ($container as $id => $data) {
+    $output .= '<div class="'. $id .' clear-block">';
+    $output .= $data;
+    $output .= '</div>';
+  }
+  $output .= '</div>';
+
+  return $output;
 }

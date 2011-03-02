@@ -15,7 +15,7 @@ function student_menu() {
     'title' => '学生平台',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('student_admin'),
-    'access arguments' => array('access administration pages'),
+		'access arguments' => array('access content'), 
     'type' => MENU_NORMAL_ITEM,
   );
   // more complex menu item
