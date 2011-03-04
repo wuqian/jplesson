@@ -1,0 +1,7 @@
+
+.advanced-text-wrapper input,
+.advanced-text-wrapper div {
+  display: inline;
+  margin-left: .25em;
+  margin-right: .25em;
+}

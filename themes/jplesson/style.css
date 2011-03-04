@@ -702,8 +702,8 @@ ul.secondary {
   clear: both;
   text-align: left; /* LTR */
   border-bottom: 1px solid #e9eff3;
-  margin: -0.2em -26px 1em;
-  padding: 0 26px 0.6em;
+  margin: -0.2em 0px 1em;
+  padding-left:15px;
 }
 h2.with-tabs {
   float: left; /* LTR */

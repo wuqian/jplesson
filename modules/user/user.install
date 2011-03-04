@@ -158,7 +158,7 @@ function user_schema() {
       ),
       'class' => array(
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 60,
         'not null' => FALSE,
         'default' => '',
         'description' => "User's class number.",

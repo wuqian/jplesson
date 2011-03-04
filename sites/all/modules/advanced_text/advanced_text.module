@@ -1,0 +1,780 @@
+<?php
+
+/**
+ * @file
+ * Defines an advanced modular text field widget.
+ */
+
+define('ADVANCED_TEXT_TYPE_ANY', '_');
+define('ADVANCED_TEXT_TYPE_ALPHANUMERIC', 'A');
+define('ADVANCED_TEXT_TYPE_ALPHABETIC', 'T');
+define('ADVANCED_TEXT_TYPE_NUMERIC', 'N');
+define('ADVANCED_TEXT_TYPE_REGEXP', '_');
+define('ADVANCED_TEXT_TYPE_SEPARATOR', '–');
+
+/**
+ * Returns an array of stub values, descriptions and regular expression strings
+ * keyed by allowed values types.
+ *
+ * @param $field
+ *   The field where the widget is located. 
+ *
+ * @return array(type_name => (stub, description, regexp))
+ */
+function advanced_text_types($field = array()) {
+  static $types;
+  if ($types) {
+    return $types;
+  }
+
+  $types = array(
+    'any' => array(
+      'stub' => ADVANCED_TEXT_TYPE_ANY,
+      'description' => t('Any character'),
+      'regexp' => '.',
+    ),
+    'alphanumeric' => array(
+      'stub' => ADVANCED_TEXT_TYPE_ALPHANUMERIC,
+      'description' => t('Alphanumeric (Aa-Zz, 0-9)'),
+      'regexp' => '[a-zA-Z0-9]',
+    ),
+    'alphabetic' => array(
+      'stub' => ADVANCED_TEXT_TYPE_ALPHABETIC,
+      'description' => t('Alphabetic (Aa-Zz)'),
+      'regexp' => '[a-zA-Z]',  
+    ),
+    'numeric' => array(
+      'stub' => ADVANCED_TEXT_TYPE_NUMERIC,
+      'description' => t('Numeric (0-9)'),
+      'regexp' => '[0-9.,]',
+      ),
+    'regexp' => array(
+      'stub' => ADVANCED_TEXT_TYPE_REGEXP,
+      'description' => t('Regular expression'),
+    ),
+    'separator' => array(
+      'stub' => ADVANCED_TEXT_TYPE_SEPARATOR,
+      'description' => t('Separator'),
+    ),
+  );
+
+  /**
+   * Allows other modules to insert new allowed values types and modify existing
+   * ones.
+   * Note that the regexp values is automatically matched exactly 1 time with
+   * the exact length of the text block.
+   */
+  $extra_types = module_invoke_all('advanced_text_custom_types', $types);
+  if (!empty($extra_types)) {
+    $types = array_merge($types, $extra_types);
+  }
+
+  return $types;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function advanced_text_menu() {
+  $items = array();
+
+  $items['admin/content/node-type/%/fields/%/advanced_text_ahah'] = array(
+    'page callback' => 'advanced_text_ahah_form',
+    'access arguments' => array('administer content types'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Rebuilds widget settings form on ahah request
+ */
+function advanced_text_ahah_form() {
+  $form_state = array('storage' => NULL, 'submitted' => FALSE);
+  $form_build_id = $_POST['form_build_id'];
+  // Get the form from the cache.
+  $form = form_get_cache($form_build_id, $form_state);
+  if (!$form) {
+    form_set_error('form_token', t('Validation error, please try again. If this error persists, please contact the site administrator.'));
+    $output = theme('status_messages');
+    print drupal_to_js(array('status' => TRUE, 'data' => $output));
+    exit();
+  }
+  $args = $form['#parameters'];
+  $form_id = array_shift($args);
+  // We will run some of the submit handlers so we need to disable redirecting.
+  $form['#redirect'] = FALSE;
+  // We need to process the form, prepare for that by setting a few internals
+  // variables.
+  $form['#post'] = $_POST;
+  $form['#programmed'] = FALSE;
+  $form_state['post'] = $_POST;
+
+  // Build, validate and if possible, submit the form.
+  drupal_process_form($form_id, $form, $form_state);
+  // This call recreates the form relying solely on the form_state that the
+  // drupal_process_form set up.
+  $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
+  // Render the new output.
+  $table = $form['widget']['drag_box']['drop_zone'];
+
+  // Exclude table tag.
+  $table['#prefix'] = strip_tags($table['#prefix'], '<thead><th><tbody><tr>');
+  $table['#suffix'] = strip_tags($table['#suffix'], '<tbody>');
+
+  $output = drupal_render($table);
+  drupal_json(array('status' => TRUE, 'data' => $output, 'messages' => theme('status_messages')));
+}
+
+/**
+* Implementation of hook_widget_info().
+*/
+function advanced_text_widget_info() {
+  return array(
+    'advanced_text' => array(
+      'label' => t('Advanced Text field'),
+      // TODO: support other field types
+      'field types' => array('text'),
+    ),
+  );
+}
+
+/**
+* Implementation of hook_widget_settings().
+*/
+function advanced_text_widget_settings($op, $widget) {
+  switch ($op) {
+    // Create the form element to be used on the widget
+    // settings form.
+    case 'form':
+      drupal_add_css(drupal_get_path('module', 'advanced_text') .'/advanced_text_admin.css');
+      drupal_add_js(drupal_get_path('module', 'advanced_text') .'/advanced_text_admin.js');
+
+      $context = _advanced_text_parse_context_from_url();
+      list($content_type_name, $field_name) = $context;
+      
+      // Url used to redirect submit buttons to our custom submit function
+      $url = 'admin/content/node-type/'. $content_type_name .'/fields/'. $field_name;
+
+      // Load settings or build a simple default structure
+      if ($widget['advanced_text_structure']) {
+        $structure = $widget['advanced_text_structure'];
+      }
+      else {
+        $structure = advanced_text_default_structure();
+      }
+
+      $form = array();      
+
+      $form['advanced_text_structure'] = array(
+        '#type' => 'value',
+        '#default_value' => $structure,
+      );
+
+      $form['drag_box'] = array(
+        '#type' => 'fieldset',
+        '#description' => t('For usage instructions on the Advanced Text widget, see <a href="@url">README.txt</a>.', array('@url' => url(drupal_get_path('module', 'advanced_text') .'/README.txt'))),
+      );
+
+      /**
+       * We hack this table because we can't just render it with theme_table
+       * here, even worse with ahah.
+       */
+      $table = array();
+      $headers = array(t('Type'), t('Weight'), t('Allowed values/Value'), t('Exact length'), t('Size'), t('Options'));
+
+      $table['#tree'] = TRUE;
+      $table['#prefix'] = '<table id="advanced-text-table" class="advanced-text-drop-zone">' .  "<thead><tr><th>$headers[0]</th><th>$headers[1]</th><th>$headers[2]</th><th>$headers[3]</th><th>$headers[4]</th><th>$headers[5]</th></tr></thead><tbody>";
+      $table['#suffix'] = '</tbody></table>';
+
+      foreach ($structure as $key => $piece) {        
+        $table["piece_$key"] = array(
+          '#prefix' => '<tr id="advanced-text-row-' . $key . '" class="advanced-text-piece draggable">',
+          '#suffix' => '</tr>',
+        );
+
+        $piece['#type'] == 'textfield' ? $piece_type = t('Text block') : $piece_type = t('Separator');
+
+        $table["piece_$key"]['weight'] = array(
+          '#type' => 'weight',
+          '#delta' => 30,
+          '#default_value' => $piece['#weight'],
+          '#attributes' => array('class' => 'advanced-text-weight-column'),
+          '#weight' => 0,
+          '#prefix' => '<td>' . $piece_type . '</td><td>',  // Piece type here
+          '#suffix' => '</td>',
+        );
+
+        // Load available allowed values types
+        $types = advanced_text_types();
+        $options = array();
+        foreach ($types as $type => $type_options) {
+          $options[$type] = $type_options['description'];
+        }
+        // Only user with appropriate permissions should be able to edit the
+        // custom regexp, since it is inserted directly in PHP.
+        $user_php = user_access('Use PHP input for field settings (dangerous - grant with care)');
+        if (!$user_php) {
+          unset($options['regexp']);
+        }
+        unset($options['separator']);
+
+        if ($piece['#type'] == 'textfield') {
+          $table["piece_$key"]['allowed_values'] = array(
+            '#type' => 'select',
+            '#description' => t('Allowed values'),
+            '#default_value' => $piece['#allowed_values'],
+            '#options' => $options,
+            '#weight' => 1,
+            '#attributes' => array('class' => 'allowed-values-select'),
+            '#prefix' => '<td class="container-float">',
+          );
+          if ($user_php) {
+            $table["piece_$key"]['allowed_values_regexp'] = array(
+              '#type' => 'textfield',
+              '#default_value' => $piece['#allowed_values_regexp'],
+              '#weight' => 2,
+              '#attributes' => array('class' => 'allowed-values-input'),
+              '#size' => 16,
+              '#suffix' => '</td>',
+            );
+          }
+          else {
+            // Safely store the regexp string even if the user can't edit it.
+            $table["piece_$key"]['allowed_values']['#suffix'] = '<div>'.  check_plain($piece['#allowed_values_regexp']) .'</div></td>';
+            $table["piece_$key"]['allowed_values_regexp'] = array(
+              '#type' => 'value',
+              '#value' => $piece['#allowed_values_regexp'],
+            );
+          }
+          // TODO: support "at least maxlength" and "at most maxlength" lengths
+          $table["piece_$key"]['maxlength'] = array(
+            '#type' => 'textfield',
+            '#default_value' => $piece['#maxlength'],
+            '#required' => TRUE,
+            '#weight' => 3,
+            '#size' => 4,
+            '#element_validate' => array('_element_validate_integer_positive'),
+            '#prefix' => '<td>',
+            '#suffix' => '</td>',
+          );
+          $table["piece_$key"]['size'] = array(
+            '#type' => 'textfield',
+            '#default_value' => $piece['#size'],
+            '#required' => TRUE,
+            '#weight' => 4,
+            '#size' => 4,
+            '#element_validate' => array('_element_validate_integer_positive'),
+            '#prefix' => '<td>',
+            '#suffix' => '</td>',
+          );
+        }
+        else {
+          $table["piece_$key"]['value'] = array(
+            '#type' => 'textarea',
+            '#default_value' => $piece['#value'],
+            '#description' => t('Value'),
+            '#required' => TRUE,
+            '#weight' => 1,
+            '#rows' => 1,
+            '#prefix' => '<td colspan="3">',
+            '#suffix' => '</td>',
+          );
+        }
+
+        $table["piece_$key"]["remove"] = array(
+          '#type' => 'submit',
+          '#name' => "remove_$key",
+          '#value' => t('Remove this piece'),
+          '#weight' => 5,
+          '#submit' => array('advanced_text_field_settings_update_pieces'),
+          '#redirect' => $url, // Used when no js
+          '#prefix' => '<td>',
+          '#suffix' => '</td>',
+          '#ahah' => array(
+            'path' => $url . '/advanced_text_ahah/remove_piece',
+            'wrapper' => 'advanced-text-table',
+            'method' => 'replace',
+          )
+        ); 
+      }
+
+      $form['drag_box']['drop_zone'] = $table;
+
+      $form['drag_box']['update_pieces_submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Update structure'),
+        '#submit' => array('advanced_text_field_settings_update_pieces'),
+        '#redirect' => $url,
+        '#ahah' => array(
+          'path' => $url . '/advanced_text_ahah/update',
+          'wrapper' => 'advanced-text-table',
+          'method' => 'replace',
+        )
+      );
+      $form['drag_box']['add_brick_submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Add a new Text block'),
+        '#submit' => array('advanced_text_field_settings_update_pieces'),
+        '#redirect' => $url,
+        '#ahah' => array(
+          'path' => $url . '/advanced_text_ahah/add_brick',
+          'wrapper' => 'advanced-text-table',
+          'method' => 'replace',
+        )
+      );
+      $form['drag_box']['add_separator_submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Add a new Separator'),
+        '#submit' => array('advanced_text_field_settings_update_pieces'),
+        '#redirect' => $url,
+        '#ahah' => array(
+          'path' => $url . '/advanced_text_ahah/add_separator',
+          'wrapper' => 'advanced-text-table',
+          'method' => 'replace',
+        )
+      );
+
+      $form['description_options'] = array(
+        '#type' => 'radios',
+        '#title' => t('Description options'),
+        '#description' => t('A description of the required format is created automatically and is presented below the Help text.'),
+        '#options' => array(
+          'stub' => t('Display separators as underscores'),
+          'full' => t('Display full separators'),
+          'no_description' => t('Do not display description (only Help text)'),
+        ),
+        '#default_value' => $widget['description_options'] ? $widget['description_options'] : 'stub',
+      );
+
+      // Weird checkboxes behavior with AHAH
+      $javascript_options = array(
+        'js' => $widget['javascript_options']['js'] !== 0 ? 'js' : 0,
+        'jump' => $widget['javascript_options']['jump'] !== 0 ? 'jump' : 0
+      );
+
+      $form['javascript_options'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Javascript options'),
+        '#description' => t('If you disable javascript, the field will be presented as a regular text field.'),
+        '#options' => array('js' => t('Use javascript to enhance the widget'), 'jump' => t('Jump to next block when current is filled out')),
+        '#default_value' => $javascript_options ? $javascript_options : array('js', 'jump'),
+      );
+
+      // Add draggable table behavior
+      drupal_add_tabledrag('advanced-text-table', 'order', 'sibling', 'advanced-text-weight-column');
+
+      return $form;
+
+    // We save only the structure since it is built following the options.
+    case 'save':
+      return array('advanced_text_structure', 'description_options', 'javascript_options');
+  }
+}
+
+/**
+ * Submit function for widget settings form
+ */
+function advanced_text_field_settings_update_pieces($form, &$form_state) {
+  /* Remove piece */
+  if ($form_state['clicked_button']['#parents'][2] == 'remove') {
+    unset($form_state['values']['drop_zone'][str_replace('remove', 'piece', $form_state['clicked_button']['#name'])]);
+  }
+
+  $rebuilt_values['values'] = array(
+    'advanced_text_structure' => advanced_text_build_pieces($form_state['values']['drop_zone']),
+  );
+
+  // We are sure that pieces are sorted because usort is called in advanced_text_build_pieces
+  $highest_weight = $rebuilt_values['values']['advanced_text_structure'][count($rebuilt_values['values']['advanced_text_structure'])-1]['#weight'];
+
+  /* Add new text block */
+  if ($form_state['clicked_button']['#parents'][0] == 'add_brick_submit') {
+    $rebuilt_values['values']['advanced_text_structure'][] = advanced_text_build_brick($highest_weight+1);
+  }
+  /* Add new separator */
+  else if ($form_state['clicked_button']['#parents'][0] == 'add_separator_submit') {
+    $rebuilt_values['values']['advanced_text_structure'][] = advanced_text_build_separator($highest_weight+1);
+  }
+
+  require_once(drupal_get_path('module', 'content') .'/includes/content.admin.inc');
+  drupal_execute('content_field_edit_form', $rebuilt_values, $form_state['values']['type_name'], $form_state['values']['field_name']);
+}
+
+/**
+ * Given widget settings, build an advanced text structure.
+ */
+function advanced_text_build_pieces($settings) {
+  $pieces = array();
+  foreach ($settings as $piece) {
+    if (isset($piece['allowed_values'])) {
+      $pieces[] = advanced_text_build_brick($piece['weight'], $piece['maxlength'], $piece['size'], $piece['allowed_values'], $piece['allowed_values_regexp']);
+    }
+    else {
+      $pieces[] = advanced_text_build_separator($piece['weight'], $piece['value']);
+    }
+  }
+  usort($pieces, "_advanced_text_form_sort");
+  return $pieces;
+}
+
+/**
+ * Build a basic brick for the advanced text field
+ *
+ * @param $weight
+ *   The position in the text field.
+ *   Elements with lower weight will be positioned to the left of the field.
+ * @param $maxlength
+ *   The number of characters that this brick can contain.
+ * @param $allowed_values
+ *
+ * @return
+ *   - array('#type', '#weight', '#maxlength', '#size', '#allowed_values')
+ */
+function advanced_text_build_brick($weight = 0, $maxlength = 8, $size = 20, $allowed_values = 'any', $allowed_values_regexp = '') {
+  return array(
+    '#type' => 'textfield',
+    '#weight' => $weight,
+    '#maxlength' => $maxlength,
+    '#size' => $size,
+    '#allowed_values' => $allowed_values,
+    '#allowed_values_regexp' => $allowed_values_regexp,
+    '#prefix' => '<div class="advanced-text-brick">',
+    '#suffix' => '</div>',
+  );
+}
+
+/**
+ * Build a basic separator for the advanced text field
+ *
+ * @param $weight
+ *   The position in the text field.
+ *   Elements with lower weight will be positioned to the left of the field.
+ * @param $value
+ *   The string displayed by this separator
+ *
+ * @return
+ *   - array('#weight', '#value')
+ */
+function advanced_text_build_separator($weight = 1, $value = '-') {
+  return array(
+    '#weight' => $weight,
+    '#value' => $value,
+    '#prefix' => '<div class="advanced-text-separator">',
+    '#suffix' => '</div>',
+  );
+}
+
+/**
+ * Build a basic default structure for the widget.
+ */
+function advanced_text_default_structure() {
+  return array(
+    advanced_text_build_brick(0), 
+    advanced_text_build_separator(1), 
+    advanced_text_build_brick(2)
+  );
+}
+
+/**
+* Implementation of hook_widget().
+*
+* The advanced_text widget is built upon the core CCK textfield widget.
+*
+* If there are multiple values for this field and CCK is
+* handling multiple values, the content module will call
+* this function as many times as needed.
+*
+* @param $form
+*   the entire form array,
+*   $form['#node'] holds node information
+* @param $form_state
+*   the form_state,
+*   $form_state['values'][$field['field_name']]
+*   holds the field's form values.
+* @param $field
+*   the field array
+* @param $items
+*   array of default values for this field
+* @param $delta
+*   the order of this item in the array of
+*   subelements (0, 1, 2, etc)
+*
+* @return
+*   the form item for a single element for this field
+*/
+function advanced_text_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  $element = text_widget($form, $form_state, $field, $items, $delta);
+  return $element;
+}
+
+/**
+ * Implementation of FAPI hook_elements().
+ *
+ * Drupal will automatically theme the element using a theme with
+ * the same name as the hook_elements key.
+ *
+ */
+function advanced_text_elements() {
+  return array(
+    'advanced_text' => array(
+      '#input' => TRUE,
+      '#columns' => array('value'), '#delta' => 0,
+      '#process' => array('advanced_text_textfield_process'),
+      '#element_validate' => array('advanced_text_element_validate'),
+      '#autocomplete_path' => FALSE,
+    ),
+  );
+}
+
+/**
+ * Process an individual element.
+ *
+ * Build the form element. When creating a form using FAPI #process,
+ * note that $element['#value'] is already set.
+ *
+ * The $fields array is in $form['#field_info'][$element['#field_name']].
+ */
+function advanced_text_textfield_process($element, $edit, $form_state, $form) {
+  // Same as text_textfield
+  $element = text_textfield_process($element, $edit, $form_state, $form);
+
+  $widget = $form['#field_info'][$element['#field_name']]['widget'];
+
+  if (!$structure = $widget['advanced_text_structure']) {
+    $structure = advanced_text_default_structure();
+  }
+
+  $field_key = $element['#columns'][0];
+
+  // Create and insert a themed description of the structure of the field
+  if (!$description_options = $widget['description_options']) {
+    $description_options = 'stub';
+  }
+  if ($description_options != 'no_description') {
+    $description = advanced_text_description($structure, $description_options);
+    $element[$field_key]['#description'] .= $description;
+  }
+
+  // Insert settings in element form for validation
+  $element['#advanced_text_structure'] = $structure;
+
+  // TODO: make this optional
+  $element[$field_key]['#attributes']['class'] .= ' advanced-text';
+
+  if ($widget['javascript_options']['js']) {
+    // JS settings must be added only once.
+    static $runonce;
+    if (!$runonce[$element['#id']]) {
+      $settings = array();
+      $id = $element['#id'] .'-'. $field_key;
+      $settings['advancedText'][$id]['options']['jump'] = $widget['javascript_options']['jump'];
+      $settings['advancedText'][$id]['field'] = $structure;
+      drupal_add_js($settings, 'setting');
+      $runonce[$element['#id']] = TRUE;
+    }
+    drupal_add_js(drupal_get_path('module', 'advanced_text') .'/advanced_text.js');
+    drupal_add_css(drupal_get_path('module', 'advanced_text') .'/advanced_text.css');
+  }
+
+  return $element;
+}
+
+/**
+ * Check that the value inserted by the user corresponds to the field structure 
+ */
+function advanced_text_element_validate($element, $form_state) {
+  $value = $form_state['values'][$element['#field_name']][$element['#delta']][$element['#columns'][0]];
+
+  // Field is empty: skip
+  if (empty($value)) {
+    return;
+  }  
+
+  $structure = $element['#advanced_text_structure'];
+  $value_array = advanced_text_explode_value($value, $structure);
+
+  // TODO: Fully validate with regular expressions to allow
+  // more precise error reporting
+
+  // Must have same number of pieces
+  if (count($structure) != count($value_array)) {
+    form_set_error($element['#field_name'], t("The submitted value doesn't match the required format."));
+    return;
+  }
+
+  $types = advanced_text_types();
+
+  foreach ($structure as $key => $piece) {
+    $format = $piece['#allowed_values'] ? $piece['#allowed_values'] : 'separator';
+    // Separator
+    if ($format == 'separator') {
+      if ($value_array[$key] != $piece['#value']) {
+        $format = $piece['#value'];
+        $count = $key+1;
+        $error = $format;
+        break;
+      }
+    }
+    else {
+      // Text block, defined by a custom regular expression
+      if ($format == 'regexp') {
+        $regexp = $piece['#allowed_values_regexp'];
+        $regexp = str_replace('{maxlength}', '{'. $piece['#maxlength'] .'}', $regexp);
+      }
+      // Text block, normal
+      else {
+        $regexp = "/^". $types[$format]['regexp'] ."{". $piece['#maxlength'] ."}$/";
+      }
+      if (!preg_match($regexp, $value_array[$key])) {
+        $error = $format;
+      }
+      if ($error) {
+        $count = $key+1;
+        break;
+      }
+    }
+  }
+  if ($error) {
+    form_set_error($element['#field_name'], t("The submitted value doesn't match the required format '%format' in block #!count", array('%format' => $error, '!count' => $count)));
+  }
+}
+
+/**
+ * Creates a stub value that respects the structure of the field.
+ */
+function advanced_text_description($structure = array(), $options = 'stub') {
+  $value = '';
+  $types = advanced_text_types();
+  $used_types = array();
+
+  foreach ($structure as $piece) {
+    if ($piece['#allowed_values']) {
+      $used_types[$piece['#allowed_values']] = $types[$piece['#allowed_values']];
+      $character = $types[$piece['#allowed_values']]['stub'];
+      $multiplier = $piece['#maxlength'];
+    }
+    else {
+      if ($options == 'stub') {
+        $used_types['separator'] = $types['separator'];
+        $character = $types['separator']['stub'];
+      }
+      else {
+        $character = $piece['#value'];
+      }
+      $multiplier = 1;
+    }
+    $value .= str_repeat($character, $multiplier);
+  }
+  return theme('advanced_text_description', $value, $used_types);
+}
+
+/**
+ * Create an array of values based on the structure of the advanced text field.
+ * 
+ * @param $value
+ *   The string to convert in an array.
+ */
+function advanced_text_explode_value($value = '', $structure) {
+  $output = array();
+  $position = 0;
+  foreach ($structure as $key => $piece) {
+    $length = $piece['#type'] == 'textfield' ? $piece['#maxlength'] : strlen($piece['#value']);
+    $substring = substr($value, $position, $length);
+    if ($substring !== FALSE) {
+      $output[$key] = $substring;
+    }
+    $position += $length;
+  }
+  return $output;
+}
+
+/**
+ * Create a string based on the structure of the advanced text field.
+ * 
+ * @param $value
+ *   The array to convert in a string. We assume it has already passed validation.
+ */
+function advanced_text_implode_value($value = array()) {
+  // TODO: Write this function :)
+  $output = '';
+  return $output;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function advanced_text_theme() {
+  return array(
+    'advanced_text' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'advanced_text_description' => array(
+      'arguments' => array('value' => NULL, 'types' => advanced_text_types()),
+    ),
+  );
+}
+
+/**
+ * FAPI theme for an individual text elements.
+ *
+ * $element['#field_name'] contains the field name
+ * $element['#delta] is the position of this element in the group
+ */
+function theme_advanced_text($element) {
+  return $element['#children'];
+}
+
+/**
+ * Theme a string describing the structure of the field,
+ * that will be inserted before the "Help text".
+ *
+ * @param $value
+ *   A stub value that respects the structure of the field, as defined by advanced_text_types().
+ *
+ *  @param $types
+ *    A keyed array of actually used text block types, as defined by the constants.
+ */
+function theme_advanced_text_description($value = 'XXXXXXXX-XXXXXXXX', $types = array()) {
+  $output = t("The text should match the format: @structure.", array('@structure' => $value));
+
+  foreach ($types as $type) {
+    $definitions[] = '<dt>'. t("!char = @type", array('!char' => $type['stub'], '@type' => $type['description'])) .'</dt>';
+  }
+  return '<div class="advanced-text-description">'. $output .'<dl>' . implode('', $definitions) . '</dl></div>';
+}
+
+/**
+ * Parse the context (the content type and the field name) from the URL.
+ *
+ * @return
+ *   - FALSE if no context could be found
+ *   - array($content_type_name, $field_name) otherwise
+ */
+function _advanced_text_parse_context_from_url() {
+  if (arg(0) == 'admin' && arg(1) == 'content' && arg(2) == 'node-type') {
+    $content_type = content_types(arg(3));
+    $field_name = arg(5);
+
+    if (arg(4) == 'fields' && !empty($field_name) && isset($content_type['fields'][$field_name])) {
+      if ($content_type['fields'][$field_name]['type'] == 'text' && $content_type['fields'][$field_name]['widget']['type'] == 'advanced_text') {
+        return array($content_type['type'], $field_name);
+      }
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Sort form elements by weight.
+ * Same as _form_sort().
+ */
+function _advanced_text_form_sort($a, $b) {
+  $a_weight = (is_array($a) && isset($a['#weight'])) ? $a['#weight'] : 0;
+  $b_weight = (is_array($b) && isset($b['#weight'])) ? $b['#weight'] : 0;
+  if ($a_weight == $b_weight) {
+    return 0;
+  }
+  return ($a_weight < $b_weight) ? -1 : 1;
+}

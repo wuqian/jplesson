@@ -1,0 +1,9 @@
+
+.container-float div {
+  margin-right: 1em;
+  float:left;
+}
+
+.container-float div div {
+  padding-top: .425em;
+}

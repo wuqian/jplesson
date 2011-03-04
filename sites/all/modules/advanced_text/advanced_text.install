@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Implementation of hook_install().
+ */
+function advanced_text_install() {
+  drupal_load('module', 'content');
+  content_notify('install', 'advanced_text');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function advanced_text_uninstall() {
+  drupal_load('module', 'content');
+  content_notify('uninstall', 'advanced_text');
+}
+
+/**
+ * Implementation of hook_enable().
+ *
+ * Notify content module when this module is enabled.
+ */
+function advanced_text_enable() {
+  drupal_load('module', 'content');
+  content_notify('enable', 'advanced_text');
+}
+
+/**
+ * Implementation of hook_disable().
+ *
+ * Notify content module when this module is disabled.
+ */
+function advanced_text_disable() {
+  drupal_load('module', 'content');
+  content_notify('disable', 'advanced_text');
+}

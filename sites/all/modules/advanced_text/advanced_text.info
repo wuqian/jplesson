@@ -1,0 +1,13 @@
+name = Advanced Text
+description = Defines an advanced modular text field widget.
+package = CCK
+dependencies[] = content
+dependencies[] = text
+core = 6.x
+
+; Information added by drupal.org packaging script on 2011-02-25
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "advanced_text"
+datestamp = "1298618812"
+

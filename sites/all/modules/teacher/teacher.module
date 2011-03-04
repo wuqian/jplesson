@@ -17,20 +17,8 @@ function teacher_menu() {
 		'access arguments' => array('access content'), 
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['teacher/notices/new'] = array(
-    'title' => '发布新通知',
-    'page callback' => 'teacher_task_list',
-  	'access arguments' => array('access teacher pages'), 
-    'type' => MENU_CALLBACK,
-  );
   $items['teacher/notices'] = array(
     'title' => '通知管理',
-    'page callback' => 'teacher_task_list',
-  	'access arguments' => array('access teacher pages'), 
-    'type' => MENU_CALLBACK,
-  );
-  $items['teacher/lessons/new'] = array(
-    'title' => '发布新课程',
     'page callback' => 'teacher_task_list',
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
@@ -41,20 +29,8 @@ function teacher_menu() {
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
-  $items['teacher/tests/new'] = array(
-    'title' => '发布新作业',
-    'page callback' => 'teacher_task_list',
-  	'access arguments' => array('access teacher pages'), 
-    'type' => MENU_CALLBACK,
-  );
   $items['teacher/tests'] = array(
     'title' => '作业管理',
-    'page callback' => 'teacher_task_list',
-  	'access arguments' => array('access teacher pages'), 
-    'type' => MENU_CALLBACK,
-  );
-  $items['teacher/students/add'] = array(
-    'title' => '添加学生用户',
     'page callback' => 'teacher_task_list',
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
@@ -62,6 +38,13 @@ function teacher_menu() {
   $items['teacher/students'] = array(
     'title' => '学生管理',
     'page callback' => 'teacher_task_list',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/students/add'] = array(
+    'title' => '添加学生用户',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('user_register'),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
