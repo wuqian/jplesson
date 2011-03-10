@@ -37,14 +37,14 @@ function teacher_menu() {
   );
   $items['teacher/students'] = array(
     'title' => '学生管理',
-    'page callback' => 'teacher_task_list',
+    'page callback' => 'teacher_students',
+  	'page arguments' => array('list'),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
   $items['teacher/students/add'] = array(
     'title' => '添加学生用户',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('user_register'),
+    'page arguments' => array('add'),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
@@ -143,5 +143,24 @@ function theme_teacher_task_list($menu_items) {
   }
   $output .= '</div>';
 
+  return $output;
+}
+
+
+function teacher_students($callback_arg = '') {
+	$op = isset($_POST['op']) ? $_POST['op'] : $callback_arg;
+  switch ($op) {
+    case 'add':
+      $output = drupal_get_form('user_register');
+      break;
+    default:
+      if (!empty($_POST['accounts']) && isset($_POST['operation']) && ($_POST['operation'] == 'delete')) {
+        $output = drupal_get_form('user_multiple_delete_confirm');
+      }
+      else {
+        $output = drupal_get_form('user_filter_form');
+        $output .= drupal_get_form('user_admin_account');
+      }
+  }
   return $output;
 }
