@@ -24,7 +24,7 @@ select.multiselect_sel {
 /* BUTTONS */
 ul#multiselect_btns {
   list-style: none;
-  margin: 10px 10px 0px 20px;
+  margin: 5px 10px 0px 20px;
 	padding: 0px;
 	float: left;
 }
@@ -37,7 +37,7 @@ li.multiselect_add, li.multiselect_remove {
 	padding: 0px;
 }
 li.multiselect_add {
-	margin-bottom: 15px;
+	margin-bottom: 0px;
 }
 .multiselect_add a {
   display: block;

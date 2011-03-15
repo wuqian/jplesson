@@ -60,6 +60,9 @@ function teacher_theme() {
     'teacher_task_list' => array(
       'arguments' => array('menu_items' => NULL),
     ),
+    'teacher_students_account_list' => array(
+      'arguments' => array('form' => NULL),
+    ),
   ));
 }
 
@@ -155,12 +158,240 @@ function teacher_students($callback_arg = '') {
       break;
     default:
       if (!empty($_POST['accounts']) && isset($_POST['operation']) && ($_POST['operation'] == 'delete')) {
-        $output = drupal_get_form('user_multiple_delete_confirm');
+        $output = drupal_get_form('teacher_students_multiple_delete_confirm');
       }
       else {
-        $output = drupal_get_form('user_filter_form');
-        $output .= drupal_get_form('user_admin_account');
+        $output = drupal_get_form('teacher_students_filter_form');
+        $output .= drupal_get_form('teacher_students_account_list');
       }
   }
+  return $output;
+}
+
+function teacher_students_filter_form() {
+  $filters = teacher_students_filters();
+
+  $i = 0;
+  $form['filters'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Show only users where'),
+    '#theme' => 'user_filters',
+  );
+  
+  foreach ($filters as $key => $filter) {
+    $names[$key] = $filter['title'];
+    $form['filters']['status'][$key] = array(
+      '#type' => 'select',
+      '#options' => $filter['options'],
+    );
+  }
+
+  $form['filters']['filter'] = array(
+    '#type' => 'radios',
+    '#options' => $names,
+  	'#default_value' => "class",
+  );
+  
+  $form['filters']['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Show'),
+  );
+
+  drupal_add_js('misc/form.js', 'core');
+
+  return $form;
+}
+
+function teacher_students_filter_form_submit($form, &$form_state) {
+  $filters = teacher_students_filters();
+  if (isset($form_state['values']['filter'])) {
+     $filter = $form_state['values']['filter'];
+     // Merge an array of arrays into one if necessary.
+     $options = $filters[$filter]['options'];
+     if (isset($options[$form_state['values'][$filter]])) {
+       $_SESSION['user_overview_filter'][0] = array($filter, $form_state['values'][$filter]);
+     }
+  } 
+  return;
+}
+
+
+/**
+ * Return class list 
+ */
+function teacher_students_classes() {
+	$classes = array();
+	$result = db_query('SELECT DISTINCT class FROM {users} WHERE class != 0');
+	while ($class = db_fetch_object($result)) {
+		$classes[$class->class] = $class->class;
+	}
+	return array_filter($classes);
+}
+
+function teacher_students_filters() {
+  // Regular filters
+  $filters = array();
+  $classes = teacher_students_classes();
+  $filters['class'] = array(
+    'title' => t('Class'),
+    'where' => "u.class = %s",
+    'join' => '',
+    'options' => $classes,
+  );
+  return $filters;
+}
+
+function teacher_students_build_filter_query() {
+  $filters = teacher_students_filters();
+
+  // Build query
+  $where = $args = $join = array();
+  foreach ($_SESSION['user_overview_filter'] as $filter) {
+    list($key, $value) = $filter;
+    // This checks to see if this permission filter is an enabled permission for
+    // the authenticated role. If so, then all users would be listed, and we can
+    // skip adding it to the filter query.
+    if ($key == 'permission') {
+      $account = new stdClass();
+      $account->uid = 'user_filter';
+      $account->roles = array(DRUPAL_AUTHENTICATED_RID => 1);
+      if (user_access($value, $account)) {
+        continue;
+      }
+    }
+    $where[] = $filters[$key]['where'];
+    $args[] = $value;
+    $join[] = $filters[$key]['join'];
+  }
+  $where = !empty($where) ? 'AND '. implode(' AND ', $where) : '';
+  $join = !empty($join) ? ' '. implode(' ', array_unique($join)) : '';
+
+  return array('where' => $where,
+           'join' => $join,
+           'args' => $args,
+         );
+}
+
+function teacher_students_account_list() {
+	$filter = teacher_students_build_filter_query();
+	$header = array(
+    array(),
+    array('data' => t('Username'), 'field' => 'u.name', 'sort' => 'asc'),
+    array('data' => t('Fullname'), 'field' => 'u.fullname'),
+    array('data' => t('Status'), 'field' => 'u.status'),
+    array('data' => t('Class'), 'field' => 'u.class'),
+    array('data' => t('Last access'), 'field' => 'u.access'),
+    t('Operations')
+  );
+  
+  $sql = 'SELECT u.uid, u.name, u.fullname, u.status, u.class, u.access FROM {users} u WHERE u.class != 0 '. $filter['where'];
+  $query_count = 'SELECT COUNT(u.uid) FROM {users} u WHERE u.class != 0 '. $filter['where'];
+  
+  $sql .= tablesort_sql($header);
+
+  $result = pager_query($sql, 50, 0, $query_count, $filter['args']);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $options = array();
+  foreach (module_invoke_all('user_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'unblock',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+  );
+
+  $destination = drupal_get_destination();
+
+  $status = array(t('blocked'), t('active'));
+  $roles = user_roles(TRUE);
+  $accounts = array();
+  while ($account = db_fetch_object($result)) {
+    $accounts[$account->uid] = '';
+    $form['name'][$account->uid] = array('#value' => theme('username', $account));
+    $form['fullname'][$account->uid] = array('#value' => $account->fullname);
+    $form['status'][$account->uid] =  array('#value' => $status[$account->status]);
+    $form['class'][$account->uid] = array('#value' => $account->class);
+    $form['last_access'][$account->uid] =  array('#value' => $account->access ? t('@time ago', array('@time' => format_interval(time() - $account->access))) : t('never'));
+    $form['operations'][$account->uid] = array('#value' => l(t('edit'), "user/$account->uid/edit", array('query' => $destination)));
+  }
+  $form['accounts'] = array(
+    '#type' => 'checkboxes',
+    '#options' => $accounts
+  );
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  return $form;
+}
+
+function teacher_students_account_list_submit($form, &$form_state) {
+  $operations = module_invoke_all('user_operations', $form_state);
+  $operation = $operations[$form_state['values']['operation']];
+  // Filter out unchecked accounts.
+  $accounts = array_filter($form_state['values']['accounts']);
+  if ($function = $operation['callback']) {
+    // Add in callback arguments if present.
+    if (isset($operation['callback arguments'])) {
+      $args = array_merge(array($accounts), $operation['callback arguments']);
+    }
+    else {
+      $args = array($accounts);
+    }
+    call_user_func_array($function, $args);
+
+    drupal_set_message(t('The update has been performed.'));
+  }
+}
+
+function teacher_students_multiple_delete_confirm() {
+	
+}
+
+function theme_teacher_students_account_list($form) {
+	// Overview table:
+  $header = array(
+    theme('table_select_header_cell'),
+    array('data' => t('Username'), 'field' => 'u.name'),
+    array('data' => t('Fullname'), 'field' => 'u.fullname'),
+    array('data' => t('Status'), 'field' => 'u.status'),
+    array('data' => t('Class'), 'field' => 'u.class'),
+    array('data' => t('Last access'), 'field' => 'u.access'),
+    t('Operations')
+  );
+
+  $output = drupal_render($form['options']);
+  if (isset($form['name']) && is_array($form['name'])) {
+    foreach (element_children($form['name']) as $key) {
+      $rows[] = array(
+        drupal_render($form['accounts'][$key]),
+        drupal_render($form['name'][$key]),
+        drupal_render($form['fullname'][$key]),
+        drupal_render($form['status'][$key]),
+        drupal_render($form['class'][$key]),
+        drupal_render($form['last_access'][$key]),
+        drupal_render($form['operations'][$key]),
+      );
+    }
+  }
+  else {
+    $rows[] = array(array('data' => t('No users available.'), 'colspan' => '7'));
+  }
+
+  $output .= theme('table', $header, $rows);
+  if ($form['pager']['#value']) {
+    $output .= drupal_render($form['pager']);
+  }
+
+  $output .= drupal_render($form);
+
   return $output;
 }

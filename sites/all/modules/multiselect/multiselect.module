@@ -202,7 +202,7 @@ function multiselect_select_process($element, $edit, &$form_state, $form) {
     '#required' => isset($element['#required']) ? $element['#required'] : $field['required'],
     '#multiple' => isset($element['#multiple']) ? $element['#multiple'] : $field['multiple'],
     '#options' => $selected_options,
-    '#size' => 10,
+    '#size' => 5,
     '#prefix' => $prefix_pre . $prefix_options . $prefix_post,
     '#suffix' => "\n</div>\n",
     '#attributes' => array('class' => "$selfield multiselect_sel", 'id' => $element['#field_name']),
@@ -258,7 +258,7 @@ function theme_multiselect_select($element) {
  */
 function _multiselect_html_for_unselected_box_start($unselfield, $fieldname) {
   $boxhtml = '';
-  $boxhtml .= "<select name=\"". $unselfield ."\" multiple=\"multiple\" class=\"form-select ". $unselfield ." multiselect_unsel\" id=\"". $fieldname ."\" size=\"10\">\n";
+  $boxhtml .= "<select name=\"". $unselfield ."\" multiple=\"multiple\" class=\"form-select ". $unselfield ." multiselect_unsel\" id=\"". $fieldname ."\" size=\"5\">\n";
   return $boxhtml;
 }
 
