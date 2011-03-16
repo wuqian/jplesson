@@ -58,7 +58,7 @@ function student_task_list() {
   	),
   );
   $menu_items['作业管理'] = array(
-    '查看并完成作业、查看作业批改', 
+    '完成作业、查看作业反馈', 
   	array(
   		l('作业列表', 'student/tests'), 
   	),
