@@ -19,7 +19,7 @@ function student_menu() {
   );
   $items['student/notices'] = array(
     'title' => '查看通知',
-    'page callback' => 'student_task_list',
+    'page callback' => 'student_notices',
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
@@ -73,4 +73,8 @@ function student_help($path, $arg) {
     	$output = '<p>'.'学习课程与实验、查看通知、完成作业与测试'.'<p>';
     	return $output;
   }
+}
+
+function student_notices() {
+	
 }
