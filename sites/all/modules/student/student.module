@@ -84,7 +84,9 @@ function student_help($path, $arg) {
 }
 
 function student_notices() {
-  $result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' ORDER BY n.changed DESC'), 50, 0, NULL, $filter['args']);
+	global $user;
+	
+  $result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "notice" AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC'), 50, 0, NULL, $filter['args']);
 
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
@@ -96,9 +98,10 @@ function student_notices() {
   while ($node = db_fetch_object($result)) {
     $nodes[$node->nid] = '';
     $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
-    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options) .' '. theme('mark', node_mark($node->nid, $node->changed)));
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
     $form['name'][$node->nid] =  array('#value' => check_plain(node_get_types('name', $node)));
     $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['date'][$node->nid] = array('#value' => format_date($node->changed));
   }
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
   $form['#theme'] = 'student_notices_list';
@@ -110,13 +113,8 @@ function theme_student_notices_list($form) {
   // the title form elements.
   $has_posts = isset($form['title']) && is_array($form['title']);
   $select_header = $has_posts ? theme('table_select_header_cell') : '';
-  $header = array($select_header, t('Title'), t('Type'), t('Author'), t('Status'));
-  if (isset($form['language'])) {
-    $header[] = t('Language');
-  }
-  $header[] = t('Operations');
+  $header = array($select_header, t('Title'), t('Type'), t('Author'), t('Date'));
   $output = '';
-
   $output .= drupal_render($form['options']);
   if ($has_posts) {
     foreach (element_children($form['title']) as $key) {
@@ -125,11 +123,7 @@ function theme_student_notices_list($form) {
       $row[] = drupal_render($form['title'][$key]);
       $row[] = drupal_render($form['name'][$key]);
       $row[] = drupal_render($form['username'][$key]);
-      $row[] = drupal_render($form['status'][$key]);
-      if (isset($form['language'])) {
-        $row[] = drupal_render($form['language'][$key]);
-      }
-      $row[] = drupal_render($form['operations'][$key]);
+      $row[] = drupal_render($form['date'][$key]);
       $rows[] = $row;
     }
 

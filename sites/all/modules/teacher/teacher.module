@@ -19,7 +19,8 @@ function teacher_menu() {
   );
   $items['teacher/notices'] = array(
     'title' => '通知管理',
-    'page callback' => 'teacher_task_list',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_admin_notices'),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
@@ -209,7 +210,7 @@ function teacher_students_filter_form_submit($form, &$form_state) {
      // Merge an array of arrays into one if necessary.
      $options = $filters[$filter]['options'];
      if (isset($options[$form_state['values'][$filter]])) {
-       $_SESSION['user_overview_filter'][0] = array($filter, $form_state['values'][$filter]);
+       $_SESSION['teacher_students_filter'][0] = array($filter, $form_state['values'][$filter]);
      }
   } 
   return;
@@ -246,7 +247,7 @@ function teacher_students_build_filter_query() {
 
   // Build query
   $where = $args = $join = array();
-  foreach ($_SESSION['user_overview_filter'] as $filter) {
+  foreach ($_SESSION['teacher_students_filter'] as $filter) {
     list($key, $value) = $filter;
     // This checks to see if this permission filter is an enabled permission for
     // the authenticated role. If so, then all users would be listed, and we can
@@ -394,4 +395,54 @@ function theme_teacher_students_account_list($form) {
   $output .= drupal_render($form);
 
   return $output;
+}
+
+function teacher_admin_notices() {
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "notice" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+
+  // Enable language column if locale is enabled or if we have any node with language
+  $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
+  $multilanguage = (module_exists('locale') || $count);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $options = array();
+  foreach (module_invoke_all('node_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
+  $aaa = function_exists('node_node_operations');
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'approve',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#submit' => array('node_admin_nodes_submit'),
+  );
+
+  $languages = language_list();
+  $destination = drupal_get_destination();
+  $nodes = array();
+  while ($node = db_fetch_object($result)) {
+    $nodes[$node->nid] = '';
+    $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options) .' '. theme('mark', node_mark($node->nid, $node->changed)));
+    $form['name'][$node->nid] =  array('#value' => check_plain(node_get_types('name', $node)));
+    $form['username'][$node->nid] = array('#value' => theme('username', $node));
+    $form['status'][$node->nid] =  array('#value' => ($node->status ? t('published') : t('not published')));
+    if ($multilanguage) {
+      $form['language'][$node->nid] = array('#value' => empty($node->language) ? t('Language neutral') : t($languages[$node->language]->name));
+    }
+    $form['operations'][$node->nid] = array('#value' => l(t('edit'), 'node/'. $node->nid .'/edit', array('query' => $destination)));
+  }
+  $form['nodes'] = array('#type' => 'checkboxes', '#options' => $nodes);
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  $form['#theme'] = 'node_admin_nodes';
+  return $form;
 }
