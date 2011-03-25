@@ -64,6 +64,9 @@ function teacher_theme() {
     'teacher_students_account_list' => array(
       'arguments' => array('form' => NULL),
     ),
+    'teacher_students_filter' => array(
+      'arguments' => array('form' => NULL),
+    ),
   ));
 }
 
@@ -170,14 +173,24 @@ function teacher_students($callback_arg = '') {
 }
 
 function teacher_students_filter_form() {
+	$session = &$_SESSION['teacher_students_filter'];
+  $session = is_array($session) ? $session : array();
   $filters = teacher_students_filters();
 
   $i = 0;
   $form['filters'] = array(
     '#type' => 'fieldset',
     '#title' => t('Show only users where'),
-    '#theme' => 'user_filters',
+    '#theme' => 'teacher_students_filter',
   );
+  
+	foreach ($session as $filter) {
+    list($type, $value) = $filter;
+    // Merge an array of arrays into one if necessary.
+    $options = $type == 'permission' ? call_user_func_array('array_merge', $filters[$type]['options']) : $filters[$type]['options'];
+    $params = array('%property' => $filters[$type]['title'] , '%value' => $options[$value]);
+		$form['filters']['current'][] = array('#value' => t('<strong>%property</strong> is <strong>%value</strong>', $params));
+  }
   
   foreach ($filters as $key => $filter) {
     $names[$key] = $filter['title'];
@@ -201,6 +214,34 @@ function teacher_students_filter_form() {
   drupal_add_js('misc/form.js', 'core');
 
   return $form;
+}
+
+function theme_teacher_students_filter($form) {
+  $output = '<ul class="clear-block">';
+  if (!empty($form['current'])) {
+    foreach (element_children($form['current']) as $key) {
+      $output .= '<li>'. drupal_render($form['current'][$key]) .'</li>';
+    }
+  }
+
+  $output .= '<li><dl class="multiselect">'. (!empty($form['current']) ? '<dt>'. t('where') .'</dt>' : '') .'<dd class="a">';
+  foreach (element_children($form['filter']) as $key) {
+    $output .= drupal_render($form['filter'][$key]);
+  }
+  $output .= '</dd>';
+
+  $output .= '<dt>'. t('is') .'</dt><dd class="b">';
+
+  foreach (element_children($form['status']) as $key) {
+    $output .= drupal_render($form['status'][$key]);
+  }
+  $output .= '</dd>';
+
+  $output .= '</dl>';
+  $output .= '<div class="container-inline" id="user-admin-buttons">'. drupal_render($form['buttons']) .'</div>';
+  $output .= '</li></ul>';
+
+  return $output;
 }
 
 function teacher_students_filter_form_submit($form, &$form_state) {
@@ -247,7 +288,8 @@ function teacher_students_build_filter_query() {
 
   // Build query
   $where = $args = $join = array();
-  foreach ($_SESSION['teacher_students_filter'] as $filter) {
+  if(isset($_SESSION['teacher_students_filter'])) {
+    foreach ($_SESSION['teacher_students_filter'] as $filter) {
     list($key, $value) = $filter;
     // This checks to see if this permission filter is an enabled permission for
     // the authenticated role. If so, then all users would be listed, and we can
@@ -264,6 +306,8 @@ function teacher_students_build_filter_query() {
     $args[] = $value;
     $join[] = $filters[$key]['join'];
   }
+  }
+
   $where = !empty($where) ? 'AND '. implode(' AND ', $where) : '';
   $join = !empty($join) ? ' '. implode(' ', array_unique($join)) : '';
 
