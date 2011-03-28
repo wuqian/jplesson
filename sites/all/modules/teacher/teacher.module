@@ -59,7 +59,7 @@ function teacher_perm() {
 }
 
 function teacher_theme() {
-	return array_merge(drupal_common_theme(), array(
+	return array(
     'teacher_task_list' => array(
       'arguments' => array('menu_items' => NULL),
     ),
@@ -72,7 +72,7 @@ function teacher_theme() {
     'teacher_admin_nodes' => array(
       'arguments' => array('form' => NULL),
     ),
-  ));
+  );
 }
 
 
