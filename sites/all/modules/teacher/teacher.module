@@ -26,13 +26,15 @@ function teacher_menu() {
   );
   $items['teacher/lessons'] = array(
     'title' => '课程管理',
-    'page callback' => 'teacher_task_list',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_admin_lessons'),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
   $items['teacher/tests'] = array(
     'title' => '作业管理',
-    'page callback' => 'teacher_task_list',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_admin_tests'),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
@@ -65,6 +67,9 @@ function teacher_theme() {
       'arguments' => array('form' => NULL),
     ),
     'teacher_students_filter' => array(
+      'arguments' => array('form' => NULL),
+    ),
+    'teacher_admin_nodes' => array(
       'arguments' => array('form' => NULL),
     ),
   ));
@@ -455,10 +460,10 @@ function teacher_admin_notices() {
     '#suffix' => '</div>',
   );
   $options = array();
+  module_load_include('inc', 'node', 'node.admin');
   foreach (module_invoke_all('node_operations') as $operation => $array) {
     $options[$operation] = $array['label'];
   }
-  $aaa = function_exists('node_node_operations');
   $form['options']['operation'] = array(
     '#type' => 'select',
     '#options' => $options,
@@ -476,17 +481,146 @@ function teacher_admin_notices() {
   while ($node = db_fetch_object($result)) {
     $nodes[$node->nid] = '';
     $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
-    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options) .' '. theme('mark', node_mark($node->nid, $node->changed)));
-    $form['name'][$node->nid] =  array('#value' => check_plain(node_get_types('name', $node)));
-    $form['username'][$node->nid] = array('#value' => theme('username', $node));
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
+    $form['username'][$node->nid] = array('#value' => $node->name);
     $form['status'][$node->nid] =  array('#value' => ($node->status ? t('published') : t('not published')));
-    if ($multilanguage) {
-      $form['language'][$node->nid] = array('#value' => empty($node->language) ? t('Language neutral') : t($languages[$node->language]->name));
-    }
+    $form['date'][$node->nid] = array('#value' => format_date($node->changed));
     $form['operations'][$node->nid] = array('#value' => l(t('edit'), 'node/'. $node->nid .'/edit', array('query' => $destination)));
   }
   $form['nodes'] = array('#type' => 'checkboxes', '#options' => $nodes);
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
-  $form['#theme'] = 'node_admin_nodes';
+  $form['#theme'] = 'teacher_admin_nodes';
   return $form;
+}
+
+function teacher_admin_lessons() {
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+
+  // Enable language column if locale is enabled or if we have any node with language
+  $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
+  $multilanguage = (module_exists('locale') || $count);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $options = array();
+  module_load_include('inc', 'node', 'node.admin');
+  foreach (module_invoke_all('node_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'approve',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#submit' => array('node_admin_nodes_submit'),
+  );
+
+  $languages = language_list();
+  $destination = drupal_get_destination();
+  $nodes = array();
+  while ($node = db_fetch_object($result)) {
+    $nodes[$node->nid] = '';
+    $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
+    $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['status'][$node->nid] =  array('#value' => ($node->status ? t('published') : t('not published')));
+    $form['date'][$node->nid] = array('#value' => format_date($node->changed));
+    $form['operations'][$node->nid] = array('#value' => l(t('edit'), 'node/'. $node->nid .'/edit', array('query' => $destination)));
+  }
+  $form['nodes'] = array('#type' => 'checkboxes', '#options' => $nodes);
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  $form['#theme'] = 'teacher_admin_nodes';
+  return $form;
+}
+
+function teacher_admin_tests() {
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "test" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+
+  // Enable language column if locale is enabled or if we have any node with language
+  $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
+  $multilanguage = (module_exists('locale') || $count);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $options = array();
+  module_load_include('inc', 'node', 'node.admin');
+  foreach (module_invoke_all('node_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'approve',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#submit' => array('node_admin_nodes_submit'),
+  );
+
+  $languages = language_list();
+  $destination = drupal_get_destination();
+  $nodes = array();
+  while ($node = db_fetch_object($result)) {
+    $nodes[$node->nid] = '';
+    $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
+    $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['status'][$node->nid] =  array('#value' => ($node->status ? t('published') : t('not published')));
+    $form['date'][$node->nid] = array('#value' => format_date($node->changed));
+    $form['operations'][$node->nid] = array('#value' => l(t('edit'), 'node/'. $node->nid .'/edit', array('query' => $destination)));
+  }
+  $form['nodes'] = array('#type' => 'checkboxes', '#options' => $nodes);
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  $form['#theme'] = 'teacher_admin_nodes';
+  return $form;
+}
+
+
+function theme_teacher_admin_nodes($form) {
+  // If there are rows in this form, then $form['title'] contains a list of
+  // the title form elements.
+  $has_posts = isset($form['title']) && is_array($form['title']);
+  $select_header = $has_posts ? theme('table_select_header_cell') : '';
+  $header = array($select_header, t('Title'), t('Author'), t('Status'), t('Date'));
+  $header[] = t('Operations');
+  $output = '';
+
+  $output .= drupal_render($form['options']);
+  if ($has_posts) {
+    foreach (element_children($form['title']) as $key) {
+      $row = array();
+      $row[] = drupal_render($form['nodes'][$key]);
+      $row[] = drupal_render($form['title'][$key]);
+      $row[] = drupal_render($form['username'][$key]);
+      $row[] = drupal_render($form['status'][$key]);
+			$row[] = drupal_render($form['date'][$key]);
+      $row[] = drupal_render($form['operations'][$key]);
+      $rows[] = $row;
+    }
+
+  }
+  else {
+    $rows[] = array(array('data' => t('No posts available.'), 'colspan' => '6'));
+  }
+
+  $output .= theme('table', $header, $rows);
+  if ($form['pager']['#value']) {
+    $output .= drupal_render($form['pager']);
+  }
+
+  $output .= drupal_render($form);
+
+  return $output;
 }

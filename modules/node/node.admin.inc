@@ -96,26 +96,26 @@ function node_node_operations() {
       'callback' => 'node_mass_update',
       'callback arguments' => array('updates' => array('status' => 0)),
     ),
-    'promote' => array(
-      'label' => t('Promote to front page'),
-      'callback' => 'node_mass_update',
-      'callback arguments' => array('updates' => array('status' => 1, 'promote' => 1)),
-    ),
-    'demote' => array(
-      'label' => t('Demote from front page'),
-      'callback' => 'node_mass_update',
-      'callback arguments' => array('updates' => array('promote' => 0)),
-    ),
-    'sticky' => array(
-      'label' => t('Make sticky'),
-      'callback' => 'node_mass_update',
-      'callback arguments' => array('updates' => array('status' => 1, 'sticky' => 1)),
-    ),
-    'unsticky' => array(
-      'label' => t('Remove stickiness'),
-      'callback' => 'node_mass_update',
-      'callback arguments' => array('updates' => array('sticky' => 0)),
-    ),
+//    'promote' => array(
+//      'label' => t('Promote to front page'),
+//      'callback' => 'node_mass_update',
+//      'callback arguments' => array('updates' => array('status' => 1, 'promote' => 1)),
+//    ),
+//    'demote' => array(
+//      'label' => t('Demote from front page'),
+//      'callback' => 'node_mass_update',
+//      'callback arguments' => array('updates' => array('promote' => 0)),
+//    ),
+//    'sticky' => array(
+//      'label' => t('Make sticky'),
+//      'callback' => 'node_mass_update',
+//      'callback arguments' => array('updates' => array('status' => 1, 'sticky' => 1)),
+//    ),
+//    'unsticky' => array(
+//      'label' => t('Remove stickiness'),
+//      'callback' => 'node_mass_update',
+//      'callback arguments' => array('updates' => array('sticky' => 0)),
+//    ),
     'delete' => array(
       'label' => t('Delete'),
       'callback' => NULL,
@@ -439,7 +439,7 @@ function node_admin_content($form_state) {
     return node_multiple_delete_confirm($form_state, array_filter($form_state['values']['nodes']));
   }
   $form = node_filter_form();
-
+	
   $form['#theme'] = 'node_filter_form';
   $form['admin']  = node_admin_nodes();
 
