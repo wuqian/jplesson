@@ -147,13 +147,13 @@ function theme_student_nodes_list($form) {
   // the title form elements.
   $has_posts = isset($form['title']) && is_array($form['title']);
   $select_header = $has_posts ? theme('table_select_header_cell') : '';
-  $header = array($select_header, t('Title'), t('Author'), t('Date'));
+  $header = array(t('Title'), t('Author'), t('Date'));
   $output = '';
   $output .= drupal_render($form['options']);
   if ($has_posts) {
     foreach (element_children($form['title']) as $key) {
       $row = array();
-      $row[] = drupal_render($form['nodes'][$key]);
+      //$row[] = drupal_render($form['nodes'][$key]);
       $row[] = drupal_render($form['title'][$key]);
       $row[] = drupal_render($form['username'][$key]);
       $row[] = drupal_render($form['date'][$key]);
