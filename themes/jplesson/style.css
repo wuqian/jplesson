@@ -18,7 +18,7 @@ body {
   background: #eee0d5;
   font: 12px Verdana, sans-serif;
   color: #000000;
-  line-height:1.5em;
+  line-height:1.6em;
 }
 
 input {
@@ -1228,13 +1228,18 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
   height:20px;
 }
 
-#block-views-lessonList-block_1 .views-row{
+#block-views-lessonList-block_1 .views-row {
   width:234px;
   height:337px;
   float:left;
   margin-right:5px;
   margin-bottom:10px;
   background:url(images/lesson_list_bg.png) no-repeat;
+}
+
+#block-views-lessonList-block_1 .views-row .views-field-teaser {
+  padding:15px 18px 5px 15px;
+  color:#666666;
 }
 
 #block-views-lessonList-block_1 .views-row .views-field-title {
@@ -1244,10 +1249,19 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
   margin-top:13px;
 }
 
+#block-views-lessonList-block_1 .views-row .views-field-view-node {
+  padding-left:15px;
+}
+
 #sidebar-right {
   margin-top:10px;
   margin-left:13px;
   border-top:1px solid #B4AE95;
+}
+
+.view-newspic img{
+	width:610px;
+	height:300px;
 }
 
 #sidebar-right .block {
@@ -1257,4 +1271,19 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
 
 #sidebar-right .block p {
   display:inline;
+}
+
+.view-NewsPage .views-field-title {
+  font-size:14px;
+  display:inline;
+}
+
+.view-NewsPage .views-field-created {
+  color:#666666;
+  display:inline;
+  padding-left:5px;
+}
+
+.view-NewsPage .views-row {
+  margin-bottom:15px;
 }

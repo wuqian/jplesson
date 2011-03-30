@@ -51,6 +51,13 @@ function teacher_menu() {
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['teacher/news'] = array(
+    'title' => '新闻管理',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('teacher_admin_news'),
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -104,6 +111,13 @@ function teacher_task_list() {
   	array(
   		l('添加学生用户', 'teacher/students/add'), 
   		l('学生管理', 'teacher/students'), 
+  	),
+  );
+  $menu_items['新闻管理'] = array(
+  	'发布与管理最新动态', 
+  	array(
+  		l('添加新闻', 'teacher/news/add'), 
+  		l('新闻管理', 'teacher/news'), 
   	),
   );
   return theme('teacher_task_list', $menu_items);
@@ -587,6 +601,52 @@ function teacher_admin_tests() {
   return $form;
 }
 
+function teacher_admin_news() {
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "news" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+
+  // Enable language column if locale is enabled or if we have any node with language
+  $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
+  $multilanguage = (module_exists('locale') || $count);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $options = array();
+  module_load_include('inc', 'node', 'node.admin');
+  foreach (module_invoke_all('node_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'approve',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#submit' => array('node_admin_nodes_submit'),
+  );
+
+  $languages = language_list();
+  $destination = drupal_get_destination();
+  $nodes = array();
+  while ($node = db_fetch_object($result)) {
+    $nodes[$node->nid] = '';
+    $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
+    $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['status'][$node->nid] =  array('#value' => ($node->status ? t('published') : t('not published')));
+    $form['date'][$node->nid] = array('#value' => format_date($node->changed));
+    $form['operations'][$node->nid] = array('#value' => l(t('edit'), 'node/'. $node->nid .'/edit', array('query' => $destination)));
+  }
+  $form['nodes'] = array('#type' => 'checkboxes', '#options' => $nodes);
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  $form['#theme'] = 'teacher_admin_nodes';
+  return $form;
+}
 
 function theme_teacher_admin_nodes($form) {
   // If there are rows in this form, then $form['title'] contains a list of
