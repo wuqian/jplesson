@@ -39,6 +39,7 @@
 .profile {
   clear: both;
   margin: 1em 0;
+  padding: 1.5em 26px;
 }
 .profile .picture {
   float: right; /* LTR */

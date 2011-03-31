@@ -1273,6 +1273,12 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
   display:inline;
 }
 
+/**
+  * NewsPage
+  */
+.view-NewsPage {
+  padding: 1.5em 26px;
+}
 .view-NewsPage .views-field-title {
   font-size:14px;
   display:inline;
