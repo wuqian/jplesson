@@ -409,7 +409,7 @@ table .form-button, table .form-submit {
 }
 
 #nav {
-	background: url(images/nav.jpg) no-repeat 1px;
+	background: url(images/nav.png) no-repeat 1px;
 	height:51px;
 }
 
@@ -432,7 +432,7 @@ table .form-button, table .form-submit {
 }
 
 #nav .menu li:hover {
-  background: url(images/nav_hover.jpg) no-repeat;
+  background: url(images/nav_hover.png) no-repeat;
 }
 
 #nav .menu li a {

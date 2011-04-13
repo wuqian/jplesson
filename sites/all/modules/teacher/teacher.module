@@ -461,7 +461,8 @@ function theme_teacher_students_account_list($form) {
 }
 
 function teacher_admin_notices() {
-	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "notice" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+	global $user;
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "notice" AND n.uid = '.$user->uid.' ORDER BY n.changed DESC'), 50, 0, NULL);
 
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
@@ -508,7 +509,8 @@ function teacher_admin_notices() {
 }
 
 function teacher_admin_lessons() {
-	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+	global $user;
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND n.uid = '.$user->uid.' ORDER BY n.changed DESC'), 50, 0, NULL);
 
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
@@ -555,7 +557,8 @@ function teacher_admin_lessons() {
 }
 
 function teacher_admin_tests() {
-	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "test" '.' ORDER BY n.changed DESC'), 50, 0, NULL);
+	global $user;
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "test" AND n.uid = '.$user->uid.' ORDER BY n.changed DESC'), 50, 0, NULL);
 
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));

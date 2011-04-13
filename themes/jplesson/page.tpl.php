@@ -28,10 +28,6 @@
         <?php endif; ?>
       </div> <!-- /header -->
       <div id="nav" class="clear-block"><?php print $header; ?></div>
-      <div id="breadcrumb-bg">
-        <?php print $breadcrumb; ?>
-      </div>
-
       <div id="center"><div id="squeeze">
           <?php if ($mission): print '<div id="mission">'. $mission .'</div>'; endif; ?>
           <?php if ($tabs): print '<div id="tabs-wrapper" class="clear-block">'; endif; ?>
