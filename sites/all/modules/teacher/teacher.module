@@ -45,7 +45,7 @@ function teacher_menu() {
   $items['teacher/lessons/%'] = array(
     'title' => '课程管理',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('teacher_admin_lessons'),
+    'page arguments' => array('teacher_admin_lessons', 2),
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
@@ -732,9 +732,8 @@ function taxonomy_term_confirm_delete_submit($form, &$form_state) {
   return;
 }
 
-function teacher_admin_lessons($course) {
-	global $user;
-	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = 1 ORDER BY n.changed DESC'), 50, 0, NULL);
+function teacher_admin_lessons(&$form_state, $course) {
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = '.$course.' ORDER BY n.changed DESC'), 50, 0, NULL);
 
   $form['options'] = array(
     '#type' => 'fieldset',
