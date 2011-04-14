@@ -24,7 +24,25 @@ function teacher_menu() {
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
-  $items['teacher/lessons'] = array(
+  $items['teacher/courses'] = array(
+    'title' => '课程管理',
+    'page callback' => 'teacher_admin_courses',
+  	'access arguments' => array('access teacher pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/courses/edit'] = array(
+    'title' => '修改课程分类',
+    'page callback' => 'teacher_admin_courses_edit',
+    'access arguments' => array('access teacher pages'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/courses/add'] = array(
+    'title' => '添加课程分类',
+    'page callback' => 'teacher_admin_courses_add',
+    'access arguments' => array('access teacher pages'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/lessons/%'] = array(
     'title' => '课程管理',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('teacher_admin_lessons'),
@@ -96,7 +114,7 @@ function teacher_task_list() {
     '添加、删除、修改课程，管理课程可见性', 
   	array(
   		l('发布新课程', 'teacher/lessons/new'), 
-  		l('课程管理', 'teacher/lessons'), 
+  		l('课程管理', 'teacher/courses'), 
   	),
   );
   $menu_items['作业管理'] = array(
@@ -128,6 +146,9 @@ function teacher_help($path, $arg) {
   switch ($path) {
     case 'teacher':
     	$output = '<p>'.'发布通知、管理课程、管理作业、管理学生信息'.'<p>';
+    	return $output;
+    case 'teacher/courses':
+    	$output = '<p>'.'修改、删除课程，管理课程可见性'.'<p>';
     	return $output;
   }
 }
@@ -508,13 +529,212 @@ function teacher_admin_notices() {
   return $form;
 }
 
-function teacher_admin_lessons() {
-	global $user;
-	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND n.uid = '.$user->uid.' ORDER BY n.changed DESC'), 50, 0, NULL);
+function teacher_admin_courses() {
+	$result = db_query('SELECT * FROM {term_data} WHERE vid = 1 ORDER BY weight ASC');
+	$menu_items = array();
+	$menu_items['添加课程分类'] = array(
+		'添加课程分类',
+		array(
+  	l('添加课程分类', 'teacher/courses/add'), 
+  	),
+	);
+	while ($course = db_fetch_object($result)) {
+		$menu_items[$course->name] = array(
+			$course->description,
+			array(
+  		l('管理课程', 'teacher/lessons/'.$course->tid), 
+  		l('修改课程描述', 'teacher/courses/edit/'.$course->tid), 
+  		),
+		);
+	}
+  return theme('teacher_task_list', $menu_items);
+}
 
-  // Enable language column if locale is enabled or if we have any node with language
-  $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
-  $multilanguage = (module_exists('locale') || $count);
+function teacher_admin_courses_add() {
+	$vocabulary = taxonomy_vocabulary_load(1);
+  return drupal_get_form('teacher_admin_courses_form' , $vocabulary);
+}
+
+function teacher_admin_courses_edit($tid) {
+	if ($term = (array)taxonomy_get_term($tid)) {
+    return drupal_get_form('teacher_admin_courses_form', taxonomy_vocabulary_load($term['vid']), $term);
+  }
+  return drupal_not_found();
+}
+
+function teacher_admin_courses_form(&$form_state, $vocabulary, $edit = array()) {
+  $edit += array(
+    'name' => '',
+    'description' => '',
+    'tid' => NULL,
+    'weight' => 0,
+  );
+
+  $parent = array_keys(taxonomy_get_parents($edit['tid']));
+  $form['#term'] = $edit;
+  $form['#term']['parent'] = $parent;
+  $form['#vocabulary'] = (array)$vocabulary;
+  $form['#vocabulary']['nodes'] = drupal_map_assoc($vocabulary->nodes);;
+
+  // Check for confirmation forms.
+  if (isset($form_state['confirm_delete'])) {
+    return array_merge($form, taxonomy_term_confirm_delete($form_state, $edit['tid']));
+  }
+  elseif (isset($form_state['confirm_parents'])) {
+    return array_merge($form, taxonomy_term_confirm_parents($form_state, $vocabulary));
+  }
+
+  $form['identification'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Identification'),
+    '#collapsible' => TRUE,
+  );
+  $form['identification']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Term name'),
+    '#default_value' => $edit['name'],
+    '#maxlength' => 255,
+    '#description' => t('The name of this term.'),
+    '#required' => TRUE);
+  $form['identification']['description'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#default_value' => $edit['description'],
+    '#description' => t('A description of the term. To be displayed on taxonomy/term pages and RSS feeds.'));
+	$form['advanced']['weight'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Weight'),
+    '#size' => 6,
+    '#default_value' => $edit['weight'],
+    '#description' => t('Terms are displayed in ascending order by weight.'),
+    '#required' => TRUE);
+  $form['vid'] = array(
+    '#type' => 'value',
+    '#value' => $vocabulary->vid);
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'));
+
+  if ($edit['tid']) {
+    $form['delete'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete'));
+    $form['tid'] = array(
+      '#type' => 'value',
+      '#value' => $edit['tid']);
+  }
+  else {
+    $form['destination'] = array('#type' => 'hidden', '#value' => $_GET['q']);
+  }
+
+  return $form;
+}
+
+/**
+ * Validation handler for the term edit form. Ensure numeric weight values.
+ *
+ * @see taxonomy_form_term()
+ */
+function teacher_admin_courses_form_validate($form, &$form_state) {
+  if (isset($form_state['values']['weight']) && !is_numeric($form_state['values']['weight'])) {
+    form_set_error('weight', t('Weight value must be numeric.'));
+  }
+}
+
+/**
+ * Submit handler to insert or update a term.
+ *
+ * @see taxonomy_form_term()
+ */
+function teacher_admin_courses_form_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#value'] == t('Delete')) {
+    // Execute the term deletion.
+    if ($form_state['values']['delete'] === TRUE) {
+      return taxonomy_term_confirm_delete_submit($form, $form_state);
+    }
+    // Rebuild the form to confirm term deletion.
+    $form_state['rebuild'] = TRUE;
+    $form_state['confirm_delete'] = TRUE;
+    return;
+  }
+  // Rebuild the form to confirm enabling multiple parents.
+  elseif ($form_state['clicked_button']['#value'] == t('Save') && !$form['#vocabulary']['tags'] && count($form_state['values']['parent']) > 1 && $form['#vocabulary']['hierarchy'] < 2) {
+    $form_state['rebuild'] = TRUE;
+    $form_state['confirm_parents'] = TRUE;
+    return;
+  }
+
+  switch (taxonomy_save_term($form_state['values'])) {
+    case SAVED_NEW:
+      drupal_set_message(t('Created new term %term.', array('%term' => $form_state['values']['name'])));
+      watchdog('taxonomy', 'Created new term %term.', array('%term' => $form_state['values']['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/term/'. $form_state['values']['tid']));
+      break;
+    case SAVED_UPDATED:
+      drupal_set_message(t('Updated term %term.', array('%term' => $form_state['values']['name'])));
+      watchdog('taxonomy', 'Updated term %term.', array('%term' => $form_state['values']['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/term/'. $form_state['values']['tid']));
+      break;
+  }
+
+  if (!$form['#vocabulary']['tags']) {
+    $current_parent_count = count($form_state['values']['parent']);
+    $previous_parent_count = count($form['#term']['parent']);
+    // Root doesn't count if it's the only parent.
+    if ($current_parent_count == 1 && isset($form_state['values']['parent'][''])) {
+      $current_parent_count = 0;
+      $form_state['values']['parent'] = array();
+    }
+
+    // If the number of parents has been reduced to one or none, do a check on the
+    // parents of every term in the vocabulary value.
+    if ($current_parent_count < $previous_parent_count && $current_parent_count < 2) {
+      taxonomy_check_vocabulary_hierarchy($form['#vocabulary'], $form_state['values']);
+    }
+    // If we've increased the number of parents and this is a single or flat
+    // hierarchy, update the vocabulary immediately.
+    elseif ($current_parent_count > $previous_parent_count && $form['#vocabulary']['hierarchy'] < 2) {
+      $form['#vocabulary']['hierarchy'] = $current_parent_count == 1 ? 1 : 2;
+      taxonomy_save_vocabulary($form['#vocabulary']);
+    }
+  }
+
+  $form_state['tid'] = $form_state['values']['tid'];
+  $form_state['redirect'] = 'teacher/courses';
+  return;
+}
+
+function taxonomy_term_confirm_delete(&$form_state, $tid) {
+  $term = taxonomy_get_term($tid);
+
+  $form['type'] = array('#type' => 'value', '#value' => 'term');
+  $form['name'] = array('#type' => 'value', '#value' => $term->name);
+  $form['tid'] = array('#type' => 'value', '#value' => $tid);
+  $form['delete'] = array('#type' => 'value', '#value' => TRUE);
+  return confirm_form($form,
+                  t('Are you sure you want to delete the term %title?',
+                  array('%title' => $term->name)),
+                  'admin/content/taxonomy',
+                  t('Deleting a term will delete all its children if there are any. This action cannot be undone.'),
+                  t('Delete'),
+                  t('Cancel'));
+}
+
+/**
+ * Submit handler to delete a term after confirmation.
+ *
+ * @see taxonomy_term_confirm_delete()
+ */
+function taxonomy_term_confirm_delete_submit($form, &$form_state) {
+  taxonomy_del_term($form_state['values']['tid']);
+  taxonomy_check_vocabulary_hierarchy($form['#vocabulary'], $form_state['values']);
+  drupal_set_message(t('Deleted term %name.', array('%name' => $form_state['values']['name'])));
+  watchdog('taxonomy', 'Deleted term %name.', array('%name' => $form_state['values']['name']), WATCHDOG_NOTICE);
+  $form_state['redirect'] = 'teacher/courses';
+  return;
+}
+
+function teacher_admin_lessons($course) {
+	global $user;
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = 1 ORDER BY n.changed DESC'), 50, 0, NULL);
 
   $form['options'] = array(
     '#type' => 'fieldset',
