@@ -24,6 +24,12 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['student/courses'] = array(
+    'title' => '课程与实验',
+ 		'page callback' => 'student_courses',
+  	'access arguments' => array('access student pages'), 
+    'type' => MENU_CALLBACK,
+  );
   $items['student/lessons'] = array(
     'title' => '课程与实验',
  		'page callback' => 'drupal_get_form',
@@ -64,7 +70,7 @@ function student_task_list() {
   $menu_items['课程与实验'] = array(
     '课程与实验学习、提问与答疑', 
   	array(
-  		l('课程与实验列表', 'student/lessons'), 
+  		l('课程与实验列表', 'student/courses'), 
   	),
   );
   $menu_items['作业管理'] = array(
@@ -104,11 +110,27 @@ function student_notices() {
   return $form;
 }
 
-function student_lessons() {
-	global $user;
-	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' WHERE n.type = "lesson" AND n.status = 1 ORDER BY n.changed DESC');
+function student_courses() {
+	$result = db_query('SELECT * FROM {term_data} WHERE vid = 1 ORDER BY weight ASC');
+	$menu_items = array();
+	while ($course = db_fetch_object($result)) {
+		$lessons = db_query('SELECT n.* FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid WHERE n.type = "lesson" AND t.tid = '.$course->tid.' AND n.status = 1 ORDER BY n.changed DESC');
+		$lessons_list = array();
+		while ($lesson = db_fetch_object($lessons)) {
+			$lessons_list[] = l($lesson->title, 'node/'. $lesson->nid);
+		}
+		$menu_items[$course->name] = array(
+			$course->description,
+			$lessons_list,
+		);
 	}
+  return theme('teacher_task_list', $menu_items);
+}
+
+function student_lessons() {
+	
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = 1 AND n.status = 1 ORDER BY n.changed DESC'), 50, 0, NULL);
+	
   $destination = drupal_get_destination();
   $nodes = array();
   while ($node = db_fetch_object($result)) {
