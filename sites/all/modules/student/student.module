@@ -44,6 +44,20 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['student/tests/%'] = array(
+    'title' => '提交作业',
+ 		'page callback' => 'drupal_get_form',
+    'page arguments' => array('student_tests_form', 2),
+  	'access arguments' => array('access student pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['student/tests/finished'] = array(
+    'title' => '已提交作业',
+ 		'page callback' => 'drupal_get_form',
+    'page arguments' => array('student_tests_finish_list'),
+  	'access arguments' => array('access student pages'), 
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -77,6 +91,7 @@ function student_task_list() {
     '完成作业、查看作业反馈', 
   	array(
   		l('作业列表', 'student/tests'), 
+  		l('已提交作业', 'student/tests/finished'), 
   	),
   );
   return theme('teacher_task_list', $menu_items);
@@ -154,14 +169,32 @@ function student_tests() {
   $nodes = array();
   while ($node = db_fetch_object($result)) {
     $nodes[$node->nid] = '';
-    $options = array();
-    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'student/tests/'. $node->nid));
     $form['username'][$node->nid] = array('#value' => $node->name);
     $form['date'][$node->nid] = array('#value' => format_date($node->changed));
   }
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
   $form['#theme'] = 'student_nodes_list';
   return $form;
+}
+
+
+/**
+ * Finish test & works.
+ */
+function student_tests_form(&$form_state, $course) {
+
+}
+
+function student_tests_form_submit($form, &$form_state) {
+
+}
+
+/**
+ * Finished test & works list.
+ */
+function student_tests_finish_list() {
+
 }
 
 function theme_student_nodes_list($form) {
@@ -175,7 +208,6 @@ function theme_student_nodes_list($form) {
   if ($has_posts) {
     foreach (element_children($form['title']) as $key) {
       $row = array();
-      //$row[] = drupal_render($form['nodes'][$key]);
       $row[] = drupal_render($form['title'][$key]);
       $row[] = drupal_render($form['username'][$key]);
       $row[] = drupal_render($form['date'][$key]);
