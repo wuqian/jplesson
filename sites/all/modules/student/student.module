@@ -67,7 +67,10 @@ function student_perm() {
 
 function student_theme() {
 	return array(
-	'student_nodes_list' => array(
+	  'student_nodes_list' => array(
+      'arguments' => array('form' => NULL),
+    ),
+    'student_tests_form' => array(
       'arguments' => array('form' => NULL),
     ),
 	);
@@ -182,8 +185,17 @@ function student_tests() {
 /**
  * Finish test & works.
  */
-function student_tests_form(&$form_state, $course) {
-	
+function student_tests_form(&$form_state, $test) {
+	$form['question'] = array(
+    '#title' => t('问题'),
+    '#default_value' => ' * Our "quantity" field requires a number to be entered',
+  );
+  $form['answer'] = array(
+    '#type' => 'textarea',
+    '#title' => t('填写答案'),
+  );
+  $form['#theme'] = 'student_tests_form';
+  return $form;
 }
 
 function student_tests_form_submit($form, &$form_state) {
@@ -195,6 +207,38 @@ function student_tests_form_submit($form, &$form_state) {
  */
 function student_tests_finish_list() {
 
+}
+
+function theme_student_tests_form($form) {
+		// If there are rows in this form, then $form['title'] contains a list of
+  // the title form elements.
+  $has_posts = isset($form['title']) && is_array($form['title']);
+  $select_header = $has_posts ? theme('table_select_header_cell') : '';
+  $header = array(t('Title'), t('Author'), t('Date'));
+  $output = '';
+  $output .= drupal_render($form['options']);
+  if ($has_posts) {
+    foreach (element_children($form['title']) as $key) {
+      $row = array();
+      $row[] = drupal_render($form['title'][$key]);
+      $row[] = drupal_render($form['username'][$key]);
+      $row[] = drupal_render($form['date'][$key]);
+      $rows[] = $row;
+    }
+
+  }
+  else {
+    $rows[] = array(array('data' => t('No posts available.'), 'colspan' => '6'));
+  }
+
+  $output .= theme('table', $header, $rows);
+  if ($form['pager']['#value']) {
+    $output .= drupal_render($form['pager']);
+  }
+
+  $output .= drupal_render($form);
+
+  return $output;
 }
 
 function theme_student_nodes_list($form) {
