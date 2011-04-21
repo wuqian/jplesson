@@ -186,10 +186,14 @@ function student_tests() {
  * Finish test & works.
  */
 function student_tests_form(&$form_state, $test) {
+	global $user;
+	if (!empty($user->class)) {
+  	$result = pager_query('SELECT n.* FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND n.nid = '.$test.' AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+	}
+	$question = db_fetch_object($result);
 	$form['question'] = array(
-    '#title' => t('问题'),
-    '#default_value' => ' * Our "quantity" field requires a number to be entered',
-  );
+		'#content' => $question->title,
+	);
   $form['answer'] = array(
     '#type' => 'textarea',
     '#title' => t('填写答案'),
@@ -210,34 +214,9 @@ function student_tests_finish_list() {
 }
 
 function theme_student_tests_form($form) {
-		// If there are rows in this form, then $form['title'] contains a list of
-  // the title form elements.
-  $has_posts = isset($form['title']) && is_array($form['title']);
-  $select_header = $has_posts ? theme('table_select_header_cell') : '';
-  $header = array(t('Title'), t('Author'), t('Date'));
   $output = '';
-  $output .= drupal_render($form['options']);
-  if ($has_posts) {
-    foreach (element_children($form['title']) as $key) {
-      $row = array();
-      $row[] = drupal_render($form['title'][$key]);
-      $row[] = drupal_render($form['username'][$key]);
-      $row[] = drupal_render($form['date'][$key]);
-      $rows[] = $row;
-    }
-
-  }
-  else {
-    $rows[] = array(array('data' => t('No posts available.'), 'colspan' => '6'));
-  }
-
-  $output .= theme('table', $header, $rows);
-  if ($form['pager']['#value']) {
-    $output .= drupal_render($form['pager']);
-  }
-
+  $output .= $form['question']['#content'];
   $output .= drupal_render($form);
-
   return $output;
 }
 
