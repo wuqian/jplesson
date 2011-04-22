@@ -191,13 +191,15 @@ function student_tests_form(&$form_state, $test) {
   	$result = pager_query('SELECT n.* FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND n.nid = '.$test.' AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
 	}
 	$question = db_fetch_object($result);
-	$form['question'] = array(
-		'#content' => $question->title,
-	);
-  $form['answer'] = array(
-    '#type' => 'textarea',
-    '#title' => t('填写答案'),
-  );
+	if ($question) {
+		$form['question'] = array(
+			'#content' => $question->title,
+		);
+	  $form['answer'] = array(
+	    '#type' => 'textarea',
+	    '#title' => t('填写答案'),
+	  );
+	}
   $form['#theme'] = 'student_tests_form';
   return $form;
 }
