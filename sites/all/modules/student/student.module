@@ -44,13 +44,6 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
-  $items['student/tests/%'] = array(
-    'title' => '提交作业',
- 		'page callback' => 'drupal_get_form',
-    'page arguments' => array('student_tests_form', 2),
-  	'access arguments' => array('access student pages'), 
-    'type' => MENU_CALLBACK,
-  );
   $items['student/tests/finished'] = array(
     'title' => '已提交作业',
  		'page callback' => 'drupal_get_form',
@@ -62,7 +55,36 @@ function student_menu() {
 }
 
 function student_perm() {
-	return array('access student pages');
+	return array(
+		'access student pages',
+		'create student test content',
+    'delete own student test content',
+    'delete any student test content',
+    'edit own student test content',
+    'edit any student test content',
+	);
+}
+
+function student_access($op, $node, $account) {
+  if ($op == 'create') {
+  	if(arg(3)) {
+  		return user_access('create student test content', $account);
+  	}
+  	else {
+  		return FALSE;
+  	}
+  }
+
+  if ($op == 'update') {
+    if (user_access('edit any student test content', $account) || (user_access('edit own student test content', $account) && ($account->uid == $node->uid))) {
+      return TRUE;
+    }
+  }
+  if ($op == 'delete') {
+    if (user_access('delete any student test content', $account) || (user_access('delete own student test content', $account) && ($account->uid == $node->uid))) {
+      return TRUE;
+    }
+  }
 }
 
 function student_theme() {
@@ -181,16 +203,34 @@ function student_tests() {
   return $form;
 }
 
+/**
+ * Student's test node info
+ */
+function student_node_info () {
+	return array(
+    'student_test_node' => array(
+      'name' => t('学生作业'),
+      'module' => 'student',
+      'description' => t("学生作业"),
+      'has_title' => TRUE,
+      'title_label' => t('学生作业'),
+      'has_body' => TRUE,
+      'body_label' => t('学生作业'),
+    )
+  );
+}
+
 
 /**
  * Finish test & works.
  */
-function student_tests_form(&$form_state, $test) {
+function student_form(&$node, $form_state) {
 	global $user;
-	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.* FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND n.nid = '.$test.' AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+	$test = arg(3);
+	if (!empty($user->class)&&!empty($test)) {
+  	$result = db_query('SELECT n.* FROM {node} n INNER JOIN {users} u ON n.uid = u.uid INNER JOIN {content_field_class} nc ON n.nid = nc.nid  WHERE n.type = "test" AND n.status = 1 AND n.nid = %d AND nc.field_class_value = %s ORDER BY n.changed DESC', $test, $user->class);
+		$question = db_fetch_object($result);
 	}
-	$question = db_fetch_object($result);
 	if ($question) {
 		$form['question'] = array(
 			'#content' => $question->title,
@@ -200,8 +240,7 @@ function student_tests_form(&$form_state, $test) {
 	    '#title' => t('填写答案'),
 	  );
 	}
-  $form['#theme'] = 'student_tests_form';
-  return $form;
+	return $form;
 }
 
 function student_tests_form_submit($form, &$form_state) {
