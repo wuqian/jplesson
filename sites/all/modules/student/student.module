@@ -37,13 +37,19 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
+//  $items['student/tests'] = array(
+//    'title' => '作业',
+// 		'page callback' => 'drupal_get_form',
+//    'page arguments' => array('student_tests'),
+//  	'access arguments' => array('access student pages'), 
+//    'type' => MENU_CALLBACK,
+//  );
   $items['student/tests'] = array(
-    'title' => '作业',
- 		'page callback' => 'drupal_get_form',
-    'page arguments' => array('student_tests'),
-  	'access arguments' => array('access student pages'), 
-    'type' => MENU_CALLBACK,
-  );
+      'page callback' => 'node_add',
+      'page arguments' => 'student_test_node',
+      'file' => 'node.pages.inc',
+  		'type' => MENU_CALLBACK,
+    );
   $items['student/tests/finished'] = array(
     'title' => '已提交作业',
  		'page callback' => 'drupal_get_form',
@@ -67,7 +73,9 @@ function student_perm() {
 
 function student_access($op, $node, $account) {
   if ($op == 'create') {
-  	if(arg(3)) {
+  	$result = db_query('SELECT type FROM {node} WHERE nid = %d', arg(3));
+  	$type = db_result($result);
+  	if($type == 'test') {
   		return user_access('create student test content', $account);
   	}
   	else {
