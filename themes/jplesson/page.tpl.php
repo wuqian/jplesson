@@ -37,6 +37,11 @@
           <?php if ($show_messages && $messages): print $messages; endif; ?>
           <?php print $help; ?>
           <div class="clear-block">
+	          <?php if ($before_content): ?>
+	          	<div id="before-content">
+	            	<?php print $before_content ?>
+	          	</div>
+	        	<?php endif; ?>
             <?php print $content ?>
           </div>
           <div id="footer"><?php print $footer_message . $footer ?></div>

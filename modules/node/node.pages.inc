@@ -57,8 +57,13 @@ function node_add($type) {
     drupal_set_title(t('Create @name', array('@name' => $types[$type]->name)));
     $output = drupal_get_form($type .'_node_form', $node);
   }
-
-  return $output;
+	if ($output != NULL) {
+		return $output;
+	}
+	else {
+		return 3;
+	}
+  
 }
 
 function node_form_validate($form, &$form_state) {

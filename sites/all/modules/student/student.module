@@ -5,6 +5,7 @@
  * @file
  * Teacher Module
  */
+module_load_include('inc', 'node', 'node.pages');
 
 /**
  * Implementation of hook_menu().
@@ -37,17 +38,18 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
-//  $items['student/tests'] = array(
-//    'title' => '作业',
-// 		'page callback' => 'drupal_get_form',
-//    'page arguments' => array('student_tests'),
-//  	'access arguments' => array('access student pages'), 
-//    'type' => MENU_CALLBACK,
-//  );
   $items['student/tests'] = array(
+    'title' => '作业',
+ 		'page callback' => 'drupal_get_form',
+    'page arguments' => array('student_tests'),
+  	'access arguments' => array('access student pages'), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['student/test/%'] = array(
       'page callback' => 'node_add',
-      'page arguments' => 'student_test_node',
-      'file' => 'node.pages.inc',
+      'page arguments' => array('student_test_node'),
+  		'access callback' => 'user_access',
+  		'access arguments' => array('access student pages'), 
   		'type' => MENU_CALLBACK,
     );
   $items['student/tests/finished'] = array(
@@ -73,16 +75,15 @@ function student_perm() {
 
 function student_access($op, $node, $account) {
   if ($op == 'create') {
-  	$result = db_query('SELECT type FROM {node} WHERE nid = %d', arg(3));
+  	$result = db_query('SELECT type FROM {node} WHERE nid = %d', arg(2));
   	$type = db_result($result);
   	if($type == 'test') {
-  		return user_access('create student test content', $account);
+  		return TRUE;
   	}
   	else {
   		return FALSE;
   	}
   }
-
   if ($op == 'update') {
     if (user_access('edit any student test content', $account) || (user_access('edit own student test content', $account) && ($account->uid == $node->uid))) {
       return TRUE;
@@ -93,6 +94,7 @@ function student_access($op, $node, $account) {
       return TRUE;
     }
   }
+  return FALSE;
 }
 
 function student_theme() {
@@ -193,6 +195,7 @@ function student_lessons() {
   return $form;
 }
 
+
 function student_tests() {
 	global $user;
 	if (!empty($user->class)) {
@@ -202,7 +205,7 @@ function student_tests() {
   $nodes = array();
   while ($node = db_fetch_object($result)) {
     $nodes[$node->nid] = '';
-    $form['title'][$node->nid] = array('#value' => l($node->title, 'student/tests/'. $node->nid));
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'student/test/'. $node->nid));
     $form['username'][$node->nid] = array('#value' => $node->name);
     $form['date'][$node->nid] = array('#value' => format_date($node->changed));
   }
@@ -233,22 +236,40 @@ function student_node_info () {
  * Finish test & works.
  */
 function student_form(&$node, $form_state) {
-	global $user;
-	$test = arg(3);
-	if (!empty($user->class)&&!empty($test)) {
-  	$result = db_query('SELECT n.* FROM {node} n INNER JOIN {users} u ON n.uid = u.uid INNER JOIN {content_field_class} nc ON n.nid = nc.nid  WHERE n.type = "test" AND n.status = 1 AND n.nid = %d AND nc.field_class_value = %s ORDER BY n.changed DESC', $test, $user->class);
-		$question = db_fetch_object($result);
-	}
-	if ($question) {
-		$form['question'] = array(
-			'#content' => $question->title,
-		);
-	  $form['answer'] = array(
-	    '#type' => 'textarea',
-	    '#title' => t('填写答案'),
-	  );
-	}
+  $form['answer'] = array(
+    '#type' => 'textarea',
+    '#title' => t('填写答案'),
+  );
 	return $form;
+}
+
+function student_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $blocks[0] = array(
+      'info' => t('test content'), 
+    );
+    return $blocks;
+  }
+  else if ($op == 'view') {
+    switch ($delta) {
+      case 0:
+        $block = array(
+          'content' => student_get_test_content(),
+        );
+        break;
+    }
+    return $block;
+  }
+}
+
+function student_get_test_content() {
+	$test = arg(2);
+	//if (!empty($user->class)&&!empty($test)) {
+  //	$result = db_query('SELECT n.* FROM {node} n INNER JOIN {users} u ON n.uid = u.uid INNER JOIN {content_field_class} nc ON n.nid = nc.nid  WHERE n.type = "test" AND n.status = 1 AND n.nid = %d AND nc.field_class_value = %s ORDER BY n.changed DESC', $test, $user->class);
+	//	$question = db_fetch_object($result);
+	//}
+	$question = node_load(arg(2));
+	return $question->body;
 }
 
 function student_tests_form_submit($form, &$form_state) {

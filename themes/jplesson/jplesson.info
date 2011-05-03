@@ -6,3 +6,9 @@ engine = phptemplate
 stylesheets[all][] = style.css
 version = "6.20"
 
+regions[left] = Left sidebar
+regions[right] = Right sidebar
+regions[before_content] = Before Content
+regions[content] = Content
+regions[header] = Header
+regions[footer] = Footer
