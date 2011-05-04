@@ -45,13 +45,20 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
+//  $items['student/test/%'] = array(
+//    'page callback' => 'node_add',
+//    'page arguments' => array('student_test_node'),
+//    'access callback' => 'user_access',
+//  	'access arguments' => array('access student pages'), 
+// 		'type' => MENU_CALLBACK,
+//  );
   $items['student/test/%'] = array(
-      'page callback' => 'node_add',
-      'page arguments' => array('student_test_node'),
-  		'access callback' => 'user_access',
-  		'access arguments' => array('access student pages'), 
-  		'type' => MENU_CALLBACK,
-    );
+    'page callback' => 'student_test_form_page',
+    'page arguments' => array(2),
+    'access callback' => 'user_access',
+  	'access arguments' => array('access student pages'), 
+ 		'type' => MENU_CALLBACK,
+  );
   $items['student/tests/finished'] = array(
     'title' => '已提交作业',
  		'page callback' => 'drupal_get_form',
@@ -66,6 +73,8 @@ function student_perm() {
 	return array(
 		'access student pages',
 		'create student test content',
+		'view own student test content',
+    'view any student test content',
     'delete own student test content',
     'delete any student test content',
     'edit own student test content',
@@ -83,6 +92,11 @@ function student_access($op, $node, $account) {
   	else {
   		return FALSE;
   	}
+  }
+	if ($op == 'view') {
+    if (user_access('view any student test content', $account) || (user_access('view own student test content', $account) && ($account->uid == $node->uid))) {
+      return TRUE;
+    }
   }
   if ($op == 'update') {
     if (user_access('edit any student test content', $account) || (user_access('edit own student test content', $account) && ($account->uid == $node->uid))) {
@@ -102,7 +116,7 @@ function student_theme() {
 	  'student_nodes_list' => array(
       'arguments' => array('form' => NULL),
     ),
-    'student_tests_form' => array(
+    'student_test_submit' => array(
       'arguments' => array('form' => NULL),
     ),
 	);
@@ -199,7 +213,7 @@ function student_lessons() {
 function student_tests() {
 	global $user;
 	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+  	$result = pager_query('SELECT n.*, u.name FROM {node} n INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
 	}
   $destination = drupal_get_destination();
   $nodes = array();
@@ -231,49 +245,119 @@ function student_node_info () {
   );
 }
 
+function student_test_form_page() {
+	global $user;
+	$test = db_fetch_object(db_query('SELECT n.nid FROM {node} n INNER JOIN {tests} t ON n.nid = t.nid WHERE n.uid = %d', $user->uid));
+	if(empty($test)) {
+		return node_add('student_test_node');
+	}
+	else {
+		//$node = node_load($test);
+		return node_page_edit(node_load($test->nid));
+	}
+}
 
 /**
- * Finish test & works.
+ * Submit test & works.
  */
 function student_form(&$node, $form_state) {
-  $form['answer'] = array(
-    '#type' => 'textarea',
-    '#title' => t('填写答案'),
+	$type = node_get_types('type', $node);
+	if ($type->has_body) {
+    $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
+  }
+  $question = node_load(arg(2));
+  $form['#question'] = $question->body;
+  $form['test'] = array(
+    '#type' => 'value',
+    '#value' => arg(2),
   );
 	return $form;
 }
 
-function student_block($op = 'list', $delta = 0, $edit = array()) {
-  if ($op == 'list') {
-    $blocks[0] = array(
-      'info' => t('test content'), 
-    );
-    return $blocks;
+
+/**
+ * Implementation of hook_validate().
+ *
+ * Our "quantity" field requires a number to be entered. This hook lets
+ * us ensure that the user entered an appropriate value before we try
+ * inserting anything into the database.
+ *
+ * Errors should be signaled with form_set_error().
+ */
+function student_validate($node, &$form) {
+//    if (!is_numeric($node->quantity)) {
+//      form_set_error('quantity', t('The quantity must be a number.'));
+//    }
+//  
+}
+
+/**
+ * Implementation of hook_insert().
+ *
+ * As a new node is being inserted into the database, we need to do our own
+ * database inserts.
+ */
+function student_insert($node) {
+  db_query("INSERT INTO {tests} (nid, tid) VALUES (%d, %d)", $node->nid, $node->test);
+}
+
+
+/**
+ * Implementation of hook_nodeapi().
+ *
+ * When a node revision is deleted, we need to remove the corresponding record
+ * from our table. The only way to handle revision deletion is by implementing
+ * hook_nodeapi().
+ */
+function student_nodeapi(&$node, $op, $teaser, $page) {
+  switch ($op) {
+    case 'delete revision':
+      // Notice that we're matching a single revision based on the node's vid.
+      db_query('DELETE FROM {tests} WHERE nid = %d', $node->nid);
+      break;
   }
-  else if ($op == 'view') {
-    switch ($delta) {
-      case 0:
-        $block = array(
-          'content' => student_get_test_content(),
-        );
-        break;
+}
+
+/**
+ * Implementation of hook_delete().
+ *
+ * When a node is deleted, we need to remove all related records from our table.
+ */
+function student_delete($node) {
+  // Notice that we're matching all revision, by using the node's nid.
+  db_query('DELETE FROM {tests} WHERE nid = %d', $node->nid);
+}
+
+function student_form_alter(&$form, &$form_state, $form_id) {   
+    if ($form_id == 'student_test_node_node_form') {
+        drupal_set_title(t('提交作业'));
+        $form['#theme'] = 'student_test_submit';
+        $form['#redirect'] = 'student/tests/finished';
     }
-    return $block;
-  }
+    return $form;
 }
 
-function student_get_test_content() {
-	$test = arg(2);
-	//if (!empty($user->class)&&!empty($test)) {
-  //	$result = db_query('SELECT n.* FROM {node} n INNER JOIN {users} u ON n.uid = u.uid INNER JOIN {content_field_class} nc ON n.nid = nc.nid  WHERE n.type = "test" AND n.status = 1 AND n.nid = %d AND nc.field_class_value = %s ORDER BY n.changed DESC', $test, $user->class);
-	//	$question = db_fetch_object($result);
-	//}
-	$question = node_load(arg(2));
-	return $question->body;
-}
+function theme_student_test_submit($form) {
+	
+	$output = "\n<div class=\"node-form\">\n";
+	$output .= "	<div class=\"preview\">\n"; 
+  $output .= $form['#question'];
+  $output .= "  </div>\n";
+  // Admin form fields and submit buttons must be rendered first, because
+  // they need to go to the bottom of the form, and so should not be part of
+  // the catch-all call to drupal_render().
+  $buttons = drupal_render($form['buttons']);
 
-function student_tests_form_submit($form, &$form_state) {
+  // Everything else gets rendered here, and is displayed before the admin form
+  // field and the submit buttons.
+  $output .= "  <div class=\"standard\">\n"; 
+  $output .= drupal_render($form);
+  $output .= "  </div>\n";
 
+  $output .= $buttons;
+  $output .= "</div>\n";
+
+  return $output;
 }
 
 /**
@@ -281,13 +365,6 @@ function student_tests_form_submit($form, &$form_state) {
  */
 function student_tests_finish_list() {
 
-}
-
-function theme_student_tests_form($form) {
-  $output = '';
-  $output .= $form['question']['#content'];
-  $output .= drupal_render($form);
-  return $output;
 }
 
 function theme_student_nodes_list($form) {

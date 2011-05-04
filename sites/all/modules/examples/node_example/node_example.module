@@ -185,13 +185,9 @@ function node_example_form(&$node, $form_state) {
     '#size' => 10,
     '#maxlength' => 10
   );
-  $form['#theme'] = '123';
   return $form;
 }
 
-function theme_example_node_type_1_node_form($form) {
-	
-}
 
 /**
  * Implementation of hook_validate().

@@ -344,7 +344,7 @@ html.js fieldset.collapsible .fieldset-wrapper {
 ** Resizable text areas
 */
 .resizable-textarea {
-  width: 95%;
+  width: 100%;
 }
 .resizable-textarea .grippie {
   height: 9px;
