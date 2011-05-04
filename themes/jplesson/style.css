@@ -282,6 +282,10 @@ span.submitted, .description {
   margin: 2em 0.5em 1em 0; /* LTR */
 }
 
+#edit-preview {
+  display:none;
+}
+
 #dblog-form-overview .form-submit,
 .confirmation .form-submit,
 .search-form .form-submit,

@@ -170,6 +170,7 @@ function filter_cron() {
  * Implementation of hook_filter_tips().
  */
 function filter_filter_tips($delta, $format, $long = FALSE) {
+	return NULL;
   global $base_url;
   switch ($delta) {
     case 0:
@@ -491,7 +492,7 @@ function filter_form($value = FILTER_FORMAT_DEFAULT, $weight = NULL, $parents = 
   $value = filter_resolve_format($value);
   $formats = filter_formats();
 
-  $extra = theme('filter_tips_more_info');
+  //$extra = theme('filter_tips_more_info');
 
   if (count($formats) > 1) {
     $form = array(

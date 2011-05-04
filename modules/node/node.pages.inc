@@ -284,13 +284,13 @@ function node_body_field(&$node, $label, $word_count) {
     '#disabled' => TRUE,
   );
 
-  $form['teaser_include'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Show summary in full view'),
-    '#default_value' => $include,
-    '#prefix' => '<div class="teaser-checkbox">',
-    '#suffix' => '</div>',
-  );
+//  $form['teaser_include'] = array(
+//    '#type' => 'checkbox',
+//    '#title' => t('Show summary in full view'),
+//    '#default_value' => $include,
+//    '#prefix' => '<div class="teaser-checkbox">',
+//    '#suffix' => '</div>',
+//  );
 
   $form['body'] = array(
     '#type' => 'textarea',

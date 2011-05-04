@@ -252,7 +252,6 @@ function student_test_form_page() {
 		return node_add('student_test_node');
 	}
 	else {
-		//$node = node_load($test);
 		return node_page_edit(node_load($test->nid));
 	}
 }
@@ -302,37 +301,11 @@ function student_insert($node) {
 }
 
 
-/**
- * Implementation of hook_nodeapi().
- *
- * When a node revision is deleted, we need to remove the corresponding record
- * from our table. The only way to handle revision deletion is by implementing
- * hook_nodeapi().
- */
-function student_nodeapi(&$node, $op, $teaser, $page) {
-  switch ($op) {
-    case 'delete revision':
-      // Notice that we're matching a single revision based on the node's vid.
-      db_query('DELETE FROM {tests} WHERE nid = %d', $node->nid);
-      break;
-  }
-}
-
-/**
- * Implementation of hook_delete().
- *
- * When a node is deleted, we need to remove all related records from our table.
- */
-function student_delete($node) {
-  // Notice that we're matching all revision, by using the node's nid.
-  db_query('DELETE FROM {tests} WHERE nid = %d', $node->nid);
-}
-
 function student_form_alter(&$form, &$form_state, $form_id) {   
     if ($form_id == 'student_test_node_node_form') {
-        drupal_set_title(t('提交作业'));
-        $form['#theme'] = 'student_test_submit';
-        $form['#redirect'] = 'student/tests/finished';
+      drupal_set_title(t('提交作业'));
+      $form['#theme'] = 'student_test_submit';
+      $form['#redirect'] = 'student/tests/finished';
     }
     return $form;
 }
