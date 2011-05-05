@@ -1649,8 +1649,23 @@ function theme_blocks($region) {
  *   suggests that this is a site user. Otherwise, only the username is returned.
  */
 function theme_username($object) {
+	if ($object->uid && $object->fullname) {
+	    // Shorten the name when it is too long or it will break many tables.
+    if (drupal_strlen($object->fullname) > 20) {
+      $name = drupal_substr($object->fullname, 0, 15) .'...';
+    }
+    else {
+      $name = $object->fullname;
+    }
 
-  if ($object->uid && $object->name) {
+    if (user_access('access user profiles')) {
+      $output = l($name, 'user/'. $object->uid, array('attributes' => array('title' => t('View user profile.'))));
+    }
+    else {
+      $output = check_plain($name);
+    }
+	}
+  else if ($object->uid && $object->name) {
     // Shorten the name when it is too long or it will break many tables.
     if (drupal_strlen($object->name) > 20) {
       $name = drupal_substr($object->name, 0, 15) .'...';

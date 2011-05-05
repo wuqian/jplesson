@@ -261,6 +261,10 @@ span.submitted, .description {
   color: #898989;
 }
 
+.question-field .description {
+  color: #000000;
+}
+
 .messages, .preview {
   margin: .75em 0 .75em;
   padding: .5em 1em;

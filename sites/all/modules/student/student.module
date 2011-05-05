@@ -61,8 +61,7 @@ function student_menu() {
   );
   $items['student/tests/finished'] = array(
     'title' => '已提交作业',
- 		'page callback' => 'drupal_get_form',
-    'page arguments' => array('student_tests_finish_list'),
+ 		'page callback' => 'student_tests_finish_list',
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
@@ -158,7 +157,7 @@ function student_help($path, $arg) {
 function student_notices() {
 	global $user;
 	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "notice" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+  	$result = pager_query('SELECT n.*, u.name, u.fullname FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "notice" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
 	}
   $destination = drupal_get_destination();
   $nodes = array();
@@ -166,7 +165,7 @@ function student_notices() {
     $nodes[$node->nid] = '';
     $options = array();
     $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
-    $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['username'][$node->nid] = array('#value' => theme('username', $node));
     $form['date'][$node->nid] = array('#value' => format_date($node->changed));
   }
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
@@ -193,7 +192,7 @@ function student_courses() {
 
 function student_lessons() {
 	
-	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = 1 AND n.status = 1 ORDER BY n.changed DESC'), 50, 0, NULL);
+	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name, u.fullname FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = 1 AND n.status = 1 ORDER BY n.changed DESC'), 50, 0, NULL);
 	
   $destination = drupal_get_destination();
   $nodes = array();
@@ -201,7 +200,7 @@ function student_lessons() {
     $nodes[$node->nid] = '';
     $options = array();
     $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
-    $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['username'][$node->nid] = array('#value' => theme('username', $node));
     $form['date'][$node->nid] = array('#value' => format_date($node->changed));
   }
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
@@ -213,14 +212,14 @@ function student_lessons() {
 function student_tests() {
 	global $user;
 	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.*, u.name FROM {node} n INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+  	$result = pager_query('SELECT n.*, u.fullname, u.name FROM {node} n INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
 	}
   $destination = drupal_get_destination();
   $nodes = array();
   while ($node = db_fetch_object($result)) {
     $nodes[$node->nid] = '';
     $form['title'][$node->nid] = array('#value' => l($node->title, 'student/test/'. $node->nid));
-    $form['username'][$node->nid] = array('#value' => $node->name);
+    $form['username'][$node->nid] = array('#value' => theme('username', $node));
     $form['date'][$node->nid] = array('#value' => format_date($node->changed));
   }
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
@@ -261,11 +260,23 @@ function student_test_form_page() {
  */
 function student_form(&$node, $form_state) {
 	$type = node_get_types('type', $node);
-	if ($type->has_body) {
-    $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
-  }
   $question = node_load(arg(2));
-  $form['#question'] = $question->body;
+  $form['question_field'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('问题描述'),
+		'#prefix' => '<div class="question-field">',
+		'#suffix' => '</div>',
+    '#description' => $question->body,
+    '#collapsible' => TRUE,
+    '#weight' => -50,
+  );
+  $form['answer_field'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('填写答案'),
+    '#collapsible' => TRUE,
+    '#weight' => -40,
+  );
+  $form['answer_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
   $form['test'] = array(
     '#type' => 'value',
     '#value' => arg(2),
@@ -284,10 +295,7 @@ function student_form(&$node, $form_state) {
  * Errors should be signaled with form_set_error().
  */
 function student_validate($node, &$form) {
-//    if (!is_numeric($node->quantity)) {
-//      form_set_error('quantity', t('The quantity must be a number.'));
-//    }
-//  
+
 }
 
 /**
@@ -304,18 +312,14 @@ function student_insert($node) {
 function student_form_alter(&$form, &$form_state, $form_id) {   
     if ($form_id == 'student_test_node_node_form') {
       drupal_set_title(t('提交作业'));
-      $form['#theme'] = 'student_test_submit';
+      //$form['#theme'] = 'student_test_submit';
       $form['#redirect'] = 'student/tests/finished';
     }
     return $form;
 }
 
 function theme_student_test_submit($form) {
-	
 	$output = "\n<div class=\"node-form\">\n";
-	$output .= "	<div class=\"preview\">\n"; 
-  $output .= $form['#question'];
-  $output .= "  </div>\n";
   // Admin form fields and submit buttons must be rendered first, because
   // they need to go to the bottom of the form, and so should not be part of
   // the catch-all call to drupal_render().
@@ -337,7 +341,39 @@ function theme_student_test_submit($form) {
  * Finished test & works list.
  */
 function student_tests_finish_list() {
+  global $user;
+	$rows = array();
 
+  $header = array(
+    array('data' => t('标题'), 'field' => 'n.nid'),
+    array('data' => t('发布人'), 'field' => 'n.nid', 'sort' => 'desc'),
+    array('data' => t('日期'), 'field' => 'n.nid'),
+    array('data' => t('已批改')),
+  );
+  $sql = "SELECT t.*, n.* FROM {tests} t INNER JOIN {node} n ON t.nid = n.nid WHERE n.uid = ".$user->uid;
+  $tablesort = tablesort_sql($header);
+  $result = pager_query($sql . $tablesort, 50);
+  
+  while ($test_fin = db_fetch_object($result)) {
+  	$test = db_fetch_object(db_query('SELECT n.*, u.fullname FROM {node} n INNER JOIN {users} u ON n.uid = u.uid WHERE nid = %d', $test_fin->tid));
+    $rows[] = array('data' =>
+      array(
+      	l($test->title,'student/test/'.$test->nid),
+      	theme('username', $test),
+      	format_date($test->created),
+      	$test_fin->nid,
+      )
+    );
+  }
+
+  if (!$rows) {
+    $rows[] = array(array('data' => t('无已完成作业.'), 'colspan' => 6));
+  }
+
+  $output .= theme('table', $header, $rows, array('id' => 'admin-dblog'));
+  $output .= theme('pager', NULL, 50, 0);
+
+  return $output;
 }
 
 function theme_student_nodes_list($form) {
