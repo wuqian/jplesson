@@ -6,6 +6,8 @@
  * Teacher Module
  */
 
+module_load_include('inc', 'node', 'node.pages');
+
 /**
  * Implementation of hook_menu().
  */
@@ -56,6 +58,21 @@ function teacher_menu() {
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['teacher/test/%'] = array(
+    'title' => '已提交作业列表',
+    'page callback' => 'teacher_admin_test_list',
+  	'page arguments' => array(2),
+  	'access callback' => 'teacher_admin_test_list_access',
+  	'access arguments' => array(2), 
+    'type' => MENU_CALLBACK,
+  );
+  $items['teacher/test/correct/%node'] = array(
+    'title' => '已提交作业列表',
+    'page callback' => 'node_page_edit',
+  	'page arguments' => array(3),
+  	'access callback' => 'teacher_test_correct_access', 
+    'type' => MENU_CALLBACK,
+  );
   $items['teacher/students'] = array(
     'title' => '学生管理',
     'page callback' => 'teacher_students',
@@ -76,6 +93,34 @@ function teacher_menu() {
   	'access arguments' => array('access teacher pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['teacher/lessons/new'] = array(
+    'title' => '添加课程',
+    'page callback' => 'node_add',
+    'page arguments' => array('lesson'),
+    'access callback' => 'node_access',
+    'access arguments' => array('create', 'lesson'),
+   );
+   $items['teacher/news/add'] = array(
+    'title' => '添加课程',
+    'page callback' => 'node_add',
+    'page arguments' => array('news'),
+    'access callback' => 'node_access',
+    'access arguments' => array('create', 'news'),
+   );
+   $items['teacher/notices/new'] = array(
+    'title' => '添加课程',
+    'page callback' => 'node_add',
+    'page arguments' => array('notice'),
+    'access callback' => 'node_access',
+    'access arguments' => array('create', 'notice'),
+   );
+   $items['teacher/tests/new'] = array(
+    'title' => '添加课程',
+    'page callback' => 'node_add',
+    'page arguments' => array('test'),
+    'access callback' => 'node_access',
+    'access arguments' => array('create', 'test'),
+   );
   return $items;
 }
 
@@ -811,7 +856,7 @@ function teacher_admin_tests() {
   while ($node = db_fetch_object($result)) {
     $nodes[$node->nid] = '';
     $options = empty($node->language) ? array() : array('language' => $languages[$node->language]);
-    $form['title'][$node->nid] = array('#value' => l($node->title, 'node/'. $node->nid, $options));
+    $form['title'][$node->nid] = array('#value' => l($node->title, 'teacher/test/'. $node->nid, $options));
     $form['username'][$node->nid] = array('#value' => $node->name);
     $form['status'][$node->nid] =  array('#value' => ($node->status ? t('published') : t('not published')));
     $form['date'][$node->nid] = array('#value' => format_date($node->changed));
@@ -821,6 +866,65 @@ function teacher_admin_tests() {
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
   $form['#theme'] = 'teacher_admin_nodes';
   return $form;
+}
+
+function teacher_admin_test_list_access($test_id) {
+	global $user;
+	if(user_access('access teacher pages', $user)) {
+		$result = db_result(db_query('SELECT uid FROM {node} WHERE nid = %d AND type = "test"',$test_id));
+		if($user->uid == $result) {
+			return TRUE;
+		}
+	}
+	else {
+		return FALSE;
+	}
+}
+
+function teacher_admin_test_list($test_id) {	
+	$rows = array();
+  $header = array(
+  	array('data' => t('姓名'), 'field' => 'u.fullname'),
+    array('data' => t('学号'), 'field' => 'u.name'),
+    array('data' => t('日期'), 'field' => 'n.created'),
+    array('data' => t('已批改')),
+    array('data' => t('操作')),
+  );
+  $sql = "SELECT t.*, n.*, u.* FROM {tests} t INNER JOIN {node} n ON t.nid = n.nid INNER JOIN {users} u ON u.uid = n.uid WHERE t.tid = %d";
+  $tablesort = tablesort_sql($header);
+  $result = pager_query($sql . $tablesort, 50, NULL, NULL, $test_id);
+  $destination = drupal_get_destination();
+  while ($test = db_fetch_object($result)) {
+    $rows[] = array('data' =>
+      array(
+      	$test->fullname,
+      	$test->name,
+      	format_date($test->created),
+      	$test->correct,
+      	l('批改', 'teacher/test/correct/'.$test->nid, array('query' => $destination)),
+      )
+    );
+  }
+  if (!$rows) {
+    $rows[] = array(array('data' => t('无已提交作业.'), 'colspan' => 6));
+  }
+
+  $output .= theme('table', $header, $rows);
+  $output .= theme('pager', NULL, 50, 0);
+
+  return $output;
+}
+
+function teacher_test_correct_access() {
+	global $user;
+	$result = db_query('SELECT tid FROM {tests} WHERE nid = %d', arg(3));
+	$question = node_load(db_result($result));
+	if ($question && user_access('access teacher pages', $user)) {
+		return TRUE;
+	}
+	else {
+		return FALSE;
+	}
 }
 
 function teacher_admin_news() {

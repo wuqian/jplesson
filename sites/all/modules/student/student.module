@@ -45,13 +45,6 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
-//  $items['student/test/%'] = array(
-//    'page callback' => 'node_add',
-//    'page arguments' => array('student_test_node'),
-//    'access callback' => 'user_access',
-//  	'access arguments' => array('access student pages'), 
-// 		'type' => MENU_CALLBACK,
-//  );
   $items['student/test/%'] = array(
     'page callback' => 'student_test_form_page',
     'page arguments' => array(2),
@@ -244,15 +237,22 @@ function student_node_info () {
   );
 }
 
-function student_test_form_page() {
+function student_test_form_page($test_id) {
 	global $user;
-	$test = db_fetch_object(db_query('SELECT n.nid FROM {node} n INNER JOIN {tests} t ON n.nid = t.nid WHERE n.uid = %d', $user->uid));
-	if(empty($test)) {
-		return node_add('student_test_node');
-	}
-	else {
-		return node_page_edit(node_load($test->nid));
-	}
+	$result = db_query('SELECT type FROM {node} WHERE nid = %d', $test_id);
+  $type = db_result($result);
+	if($type == 'test') {
+		$test = db_fetch_object(db_query('SELECT t.nid FROM {tests} t INNER JOIN {node} n ON t.nid = n.nid WHERE n.uid = %d AND t.tid = %d', $user->uid, $test_id));
+		if(empty($test)) {
+			return node_add('student_test_node');
+		}
+		else {
+			return node_page_edit(node_load($test->nid));
+		}
+ 	}
+ 	else {
+ 		return MENU_NOT_FOUND;
+  }
 }
 
 /**
@@ -260,27 +260,77 @@ function student_test_form_page() {
  */
 function student_form(&$node, $form_state) {
 	$type = node_get_types('type', $node);
-  $question = node_load(arg(2));
-  $form['question_field'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('问题描述'),
-		'#prefix' => '<div class="question-field">',
-		'#suffix' => '</div>',
-    '#description' => $question->body,
-    '#collapsible' => TRUE,
-    '#weight' => -50,
-  );
-  $form['answer_field'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('填写答案'),
-    '#collapsible' => TRUE,
-    '#weight' => -40,
-  );
-  $form['answer_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
-  $form['test'] = array(
-    '#type' => 'value',
-    '#value' => arg(2),
-  );
+	if(arg(2) == 'correct') {
+		$result = db_query('SELECT tid FROM {tests} WHERE nid = %d', arg(3));
+		$question = node_load(db_result($result));
+		$form['question_field'] = array(
+	    '#type' => 'fieldset',
+	    '#title' => t('问题描述'),
+			'#prefix' => '<div class="description-field">',
+			'#suffix' => '</div>',
+	    '#description' => $question->body,
+	    '#collapsible' => TRUE,
+	    '#weight' => -50,
+	  );
+	  $form['answer_field'] = array(
+	    '#type' => 'fieldset',
+	    '#title' => t('问题解答'),
+			'#prefix' => '<div class="description-field">',
+			'#suffix' => '</div>',
+	    '#description' => $node->body,
+	    '#collapsible' => TRUE,
+	    '#weight' => -40,
+	  );
+	  $form['hide_field'] = array(
+	    '#type' => 'fieldset',
+	  	'#access' => FALSE,
+	    '#collapsible' => TRUE,
+	    '#weight' => -30,
+	  );
+	  $form['hide_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
+	  $form['correct_field'] = array(
+	  	'#type' => 'fieldset',
+	    '#title' => t('批改'),
+	    '#collapsible' => TRUE,
+	    '#weight' => -20,
+	  );
+	  $form['correct_field']['teacher_comment'] = array(
+	  	'#type' => 'textarea',
+  		'#required' => TRUE,
+	  );
+	}
+	else {
+		$question = node_load(arg(2));
+	  $form['question_field'] = array(
+	    '#type' => 'fieldset',
+	    '#title' => t('问题描述'),
+			'#prefix' => '<div class="description-field">',
+			'#suffix' => '</div>',
+	    '#description' => $question->body,
+	    '#collapsible' => TRUE,
+	    '#weight' => -50,
+	  );
+	  $form['answer_field'] = array(
+	    '#type' => 'fieldset',
+	    '#title' => t('填写答案'),
+	    '#collapsible' => TRUE,
+	    '#weight' => -40,
+	  );
+	  $form['answer_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
+	  $form['correct_field'] = array(
+	    '#type' => 'fieldset',
+	    '#title' => t('教师批改'),
+			'#prefix' => '<div class="description-field">',
+			'#suffix' => '</div>',
+	    '#description' => $question->	comment,
+	    '#collapsible' => TRUE,
+	    '#weight' => -30,
+	  );
+	  $form['test'] = array(
+	    '#type' => 'value',
+	    '#value' => arg(2),
+	  );
+	}
 	return $form;
 }
 
@@ -308,12 +358,24 @@ function student_insert($node) {
   db_query("INSERT INTO {tests} (nid, tid) VALUES (%d, %d)", $node->nid, $node->test);
 }
 
+function student_update($node) {
+  db_query("UPDATE {tests} SET comment = '%s' WHERE nid = %d", $node->teacher_comment, $node->nid);
+}
+
+function student_load($node) {
+  $additions = db_fetch_object(db_query('SELECT comment FROM {tests} WHERE nid = %d', $node->nid));
+  return $additions;
+}
 
 function student_form_alter(&$form, &$form_state, $form_id) {   
     if ($form_id == 'student_test_node_node_form') {
-      drupal_set_title(t('提交作业'));
-      //$form['#theme'] = 'student_test_submit';
-      $form['#redirect'] = 'student/tests/finished';
+    	if(arg(2) == 'correct'){
+    		drupal_set_title(t('批改作业'));
+    	}
+    	else {
+    		drupal_set_title(t('提交作业'));
+      	$form['#redirect'] = 'student/tests/finished';
+    	}
     }
     return $form;
 }
@@ -345,9 +407,9 @@ function student_tests_finish_list() {
 	$rows = array();
 
   $header = array(
-    array('data' => t('标题'), 'field' => 'n.nid'),
-    array('data' => t('发布人'), 'field' => 'n.nid', 'sort' => 'desc'),
-    array('data' => t('日期'), 'field' => 'n.nid'),
+    array('data' => t('标题')),
+    array('data' => t('发布人')),
+    array('data' => t('日期')),
     array('data' => t('已批改')),
   );
   $sql = "SELECT t.*, n.* FROM {tests} t INNER JOIN {node} n ON t.nid = n.nid WHERE n.uid = ".$user->uid;
@@ -361,7 +423,7 @@ function student_tests_finish_list() {
       	l($test->title,'student/test/'.$test->nid),
       	theme('username', $test),
       	format_date($test->created),
-      	$test_fin->nid,
+      	$test_fin->correct,
       )
     );
   }
@@ -370,7 +432,7 @@ function student_tests_finish_list() {
     $rows[] = array(array('data' => t('无已完成作业.'), 'colspan' => 6));
   }
 
-  $output .= theme('table', $header, $rows, array('id' => 'admin-dblog'));
+  $output .= theme('table', $header, $rows);
   $output .= theme('pager', NULL, 50, 0);
 
   return $output;
