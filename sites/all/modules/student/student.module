@@ -288,14 +288,15 @@ function student_form(&$node, $form_state) {
 	    '#weight' => -30,
 	  );
 	  $form['hide_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
-	  $form['correct_field'] = array(
+	  $form['remark_field'] = array(
 	  	'#type' => 'fieldset',
 	    '#title' => t('批改'),
 	    '#collapsible' => TRUE,
 	    '#weight' => -20,
 	  );
-	  $form['correct_field']['teacher_comment'] = array(
+	  $form['remark_field']['remark'] = array(
 	  	'#type' => 'textarea',
+	  	'#default_value' => $node->remark,
   		'#required' => TRUE,
 	  );
 	}
@@ -317,12 +318,12 @@ function student_form(&$node, $form_state) {
 	    '#weight' => -40,
 	  );
 	  $form['answer_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
-	  $form['correct_field'] = array(
+	  $form['remark_field'] = array(
 	    '#type' => 'fieldset',
 	    '#title' => t('教师批改'),
 			'#prefix' => '<div class="description-field">',
 			'#suffix' => '</div>',
-	    '#description' => $question->	comment,
+	    '#description' => $node->remark,
 	    '#collapsible' => TRUE,
 	    '#weight' => -30,
 	  );
@@ -359,11 +360,11 @@ function student_insert($node) {
 }
 
 function student_update($node) {
-  db_query("UPDATE {tests} SET comment = '%s' WHERE nid = %d", $node->teacher_comment, $node->nid);
+  db_query("UPDATE {tests} SET remark = '%s' WHERE nid = %d", $node->remark, $node->nid);
 }
 
 function student_load($node) {
-  $additions = db_fetch_object(db_query('SELECT comment FROM {tests} WHERE nid = %d', $node->nid));
+  $additions = db_fetch_object(db_query('SELECT remark FROM {tests} WHERE nid = %d', $node->nid));
   return $additions;
 }
 
