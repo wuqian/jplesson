@@ -299,6 +299,10 @@ function student_form(&$node, $form_state) {
 	  	'#default_value' => $node->remark,
   		'#required' => TRUE,
 	  );
+	  $form['corrected'] = array(
+	    '#type' => 'value',
+	    '#value' => 1,
+	  );
 	}
 	else {
 		$question = node_load(arg(2));
@@ -360,11 +364,13 @@ function student_insert($node) {
 }
 
 function student_update($node) {
-  db_query("UPDATE {tests} SET remark = '%s' WHERE nid = %d", $node->remark, $node->nid);
+	if ($node->corrected == 1) {
+		db_query("UPDATE {tests} SET remark = '%s', correct = %d WHERE nid = %d", $node->remark,$node->corrected, $node->nid);
+	}
 }
 
 function student_load($node) {
-  $additions = db_fetch_object(db_query('SELECT remark FROM {tests} WHERE nid = %d', $node->nid));
+  $additions = db_fetch_object(db_query('SELECT remark, correct FROM {tests} WHERE nid = %d', $node->nid));
   return $additions;
 }
 
@@ -418,13 +424,20 @@ function student_tests_finish_list() {
   $result = pager_query($sql . $tablesort, 50);
   
   while ($test_fin = db_fetch_object($result)) {
+  	$test_icon = null;
+  	if ($test_fin->correct == 1) {
+  		$test_icon = theme('image', 'misc/message-24-ok.png', t('已批改'), t('已批改'));
+  	}
+  	else {
+  		$test_icon = theme('image', 'misc/message-24-help.png', t('未批改'), t('未批改'));
+  	}
   	$test = db_fetch_object(db_query('SELECT n.*, u.fullname FROM {node} n INNER JOIN {users} u ON n.uid = u.uid WHERE nid = %d', $test_fin->tid));
     $rows[] = array('data' =>
       array(
       	l($test->title,'student/test/'.$test->nid),
       	theme('username', $test),
       	format_date($test->created),
-      	$test_fin->correct,
+      	$test_icon,
       )
     );
   }
