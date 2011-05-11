@@ -895,12 +895,19 @@ function teacher_admin_test_list($test_id) {
   $result = pager_query($sql . $tablesort, 50, NULL, NULL, $test_id);
   $destination = drupal_get_destination();
   while ($test = db_fetch_object($result)) {
+    $test_icon = null;
+  	if ($test->correct == 1) {
+  		$test_icon = theme('image', 'misc/message-16-ok.png', t('已批改'), t('已批改'), array('class' => 'table-icon'));
+  	}
+  	else {
+  		$test_icon = theme('image', 'misc/message-16-wait.png', t('未批改'), t('未批改'), array('class' => 'table-icon'));
+  	}
     $rows[] = array('data' =>
       array(
       	$test->fullname,
       	$test->name,
       	format_date($test->created),
-      	$test->correct,
+      	$test_icon,
       	l('批改', 'teacher/test/correct/'.$test->nid, array('query' => $destination)),
       )
     );

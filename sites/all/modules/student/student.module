@@ -210,14 +210,24 @@ function student_tests() {
   $destination = drupal_get_destination();
   $nodes = array();
   while ($node = db_fetch_object($result)) {
-    $nodes[$node->nid] = '';
-    $form['title'][$node->nid] = array('#value' => l($node->title, 'student/test/'. $node->nid));
-    $form['username'][$node->nid] = array('#value' => theme('username', $node));
-    $form['date'][$node->nid] = array('#value' => format_date($node->changed));
+  	
+  	if (student_test_is_finished($node->nid)) {
+  		$nodes[$node->nid] = '';
+			$form['title'][$node->nid] = array('#value' => l($node->title, 'student/test/'. $node->nid));
+    	$form['username'][$node->nid] = array('#value' => theme('username', $node));
+    	$form['date'][$node->nid] = array('#value' => format_date($node->changed));
+  	}
   }
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
   $form['#theme'] = 'student_nodes_list';
   return $form;
+}
+
+function student_test_is_finished($test) {
+	global $user;
+	$result = db_query('SELECT n.nid FROM {tests} t INNER JOIN {node} n ON t.nid = n.nid WHERE n.uid = %d AND t.tid = %d', $user->uid, $test);
+	$is_fin = db_fetch_object($result);
+	return empty($is_fin);
 }
 
 /**
@@ -322,15 +332,18 @@ function student_form(&$node, $form_state) {
 	    '#weight' => -40,
 	  );
 	  $form['answer_field']['body_field'] = node_body_field($node, NULL, $type->min_word_count);
-	  $form['remark_field'] = array(
-	    '#type' => 'fieldset',
-	    '#title' => t('教师批改'),
-			'#prefix' => '<div class="description-field">',
-			'#suffix' => '</div>',
-	    '#description' => $node->remark,
-	    '#collapsible' => TRUE,
-	    '#weight' => -30,
-	  );
+	  if ($node->correct) {
+	  	$form['remark_field'] = array(
+		    '#type' => 'fieldset',
+		    '#title' => t('教师批改'),
+				'#prefix' => '<div class="description-field">',
+				'#suffix' => '</div>',
+		    '#description' => $node->remark,
+		    '#collapsible' => TRUE,
+		    '#weight' => -30,
+		  );
+	  }
+	  
 	  $form['test'] = array(
 	    '#type' => 'value',
 	    '#value' => arg(2),
@@ -426,10 +439,10 @@ function student_tests_finish_list() {
   while ($test_fin = db_fetch_object($result)) {
   	$test_icon = null;
   	if ($test_fin->correct == 1) {
-  		$test_icon = theme('image', 'misc/message-24-ok.png', t('已批改'), t('已批改'));
+  		$test_icon = theme('image', 'misc/message-16-ok.png', t('已批改'), t('已批改'), array('class' => 'table-icon'));
   	}
   	else {
-  		$test_icon = theme('image', 'misc/message-24-help.png', t('未批改'), t('未批改'));
+  		$test_icon = theme('image', 'misc/message-16-wait.png', t('未批改'), t('未批改'), array('class' => 'table-icon'));
   	}
   	$test = db_fetch_object(db_query('SELECT n.*, u.fullname FROM {node} n INNER JOIN {users} u ON n.uid = u.uid WHERE nid = %d', $test_fin->tid));
     $rows[] = array('data' =>
