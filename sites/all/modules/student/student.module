@@ -28,7 +28,7 @@ function student_menu() {
   $items['student/courses'] = array(
     'title' => '课程与实验',
  		'page callback' => 'student_courses',
-  	'access arguments' => array('access student pages'), 
+  	'access arguments' => array('access content'), 
     'type' => MENU_CALLBACK,
   );
   $items['student/lessons'] = array(

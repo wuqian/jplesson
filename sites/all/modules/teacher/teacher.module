@@ -270,13 +270,21 @@ function teacher_admin_import_user() {
 }
 
 function teacher_admin_import_user_submit($form, &$form_state) {
-	$dest = file_directory_path();
-	if($file = file_save_upload('upload', array('file_validate_extensions' => array('xls')), $dest)) {
-		$a = t('The attached file was successfully uploaded');
-		drupal_set_message($a);
+	require_once 'excel_reader2.php';
+//	$dest = file_directory_path();
+//	if($file = file_save_upload('upload', array('file_validate_extensions' => array('xls')), $dest)) {
+	if(1) {
+		$data = new Spreadsheet_Excel_Reader('/Library/WebServer/Documents/excelreader/2011-dis-1.xls', false, 'UTF-8');
+		$rowcount = $data->rowcount();
+		$row = 1;
+		while($row <= $rowcount) {
+			drupal_set_message($data->val($row, 1));
+			$row += 1;
+		}
+		drupal_set_message(t('导入成功！'));
 	}
 	else {
-		drupal_set_message(t('The attched file failed to upload. Please try again'));
+		drupal_set_message(t('导入失败，请检查文件格式'));
 	}
 	return;
 }
