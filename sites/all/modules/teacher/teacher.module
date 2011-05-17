@@ -186,7 +186,7 @@ function teacher_task_list() {
   $menu_items['学生管理'] = array(
   	'学生基本信息查看与管理', 
   	array(
-  		l('添加学生用户', 'teacher/students/add'), 
+  		l('添加用户', 'teacher/students/add'), 
   		l('学生管理', 'teacher/students'), 
   		l('批量导入学生用户', 'teacher/students/import/user'), 
   		l('导入思科网院用户信息', 'teacher/students/import/cisco'), 
@@ -254,14 +254,19 @@ function theme_teacher_task_list($menu_items) {
   return $output;
 }
 
+function _teacher_admin_excel_filter($data) {
+	preg_match('/[a-zA-Z0-9_\-]+/', $data, $matches);
+	return $matches[0];
+}
+
 function teacher_admin_import_user() {
 	$form['#attributes'] = array('enctype' => "multipart/form-data");
 	$form['upload'] = array(
 		'#type' => 'file',
-		'#title' => t('选择要导入的学生数据表格(XLS格式)'),
+		'#title' => t('选择要导入的学生数据表格'),
+		'#description' => t('文件必须是XLS格式'),
 		'#size' => 40,
 	);
-	
 	$form['submit'] = array(
 		'#type' => 'submit',
 		'#value' => t('导入'),
@@ -271,30 +276,105 @@ function teacher_admin_import_user() {
 
 function teacher_admin_import_user_submit($form, &$form_state) {
 	require_once 'excel_reader2.php';
-//	$dest = file_directory_path();
-//	if($file = file_save_upload('upload', array('file_validate_extensions' => array('xls')), $dest)) {
-	if(1) {
-		$data = new Spreadsheet_Excel_Reader('/Library/WebServer/Documents/excelreader/2011-dis-1.xls', false, 'UTF-8');
-		$rowcount = $data->rowcount();
-		$row = 1;
-		while($row <= $rowcount) {
-			drupal_set_message($data->val($row, 1));
-			$row += 1;
+	$dest = file_directory_path();
+	if($file = file_save_upload('upload', array('file_validate_extensions' => array('xls')), $dest)) {
+		$data = new Spreadsheet_Excel_Reader($file->filepath, false, 'UTF-8');
+		if($data->val(1, 1) == '教学班点名册') {
+			$rowcount = $data->rowcount();
+			$row = 5;
+			$success = 0;
+			$fail = 0;
+			while($row <= $rowcount) {
+				$student = array();
+				$student['username'] = $data->val($row, 1);
+				$student['fullname'] = $data->val($row, 3);
+				$student['class'] = $data->val($row, 8);
+				if(!empty($student['username'])) {
+					$pass = $student['username'];
+					$url = parse_url($GLOBALS['base_url']);
+		      $mail = $student['username'] .'@'. $url['host'];
+		      $user = user_load(array('name' => $student['username']));
+					$account = user_save($user, array('name' => $student['username'], 'pass' => $pass, 'fullname' => $student['fullname'], 'class' => $student['class'], 'mail' => $mail, 'roles' => array('4' => '学生'), 'status' =>'1', 'access' => $now));
+				}
+				if($account) {
+					$success += 1;
+				}
+				else {
+					$fail += 1;
+				}
+				$row += 1;
+			}
+			drupal_set_message('成功导入'.$success.'条学生信息！');
+			if($fail > 0) {
+				drupal_set_message($fail.'条学生信息导入失败，请检查数据格式！', 'error');
+			}
+		} 
+		else {
+			drupal_set_message(t('导入失败，请检查文件格式'), 'error');
 		}
-		drupal_set_message(t('导入成功！'));
 	}
 	else {
-		drupal_set_message(t('导入失败，请检查文件格式'));
+		drupal_set_message(t('导入失败，请检查文件格式'), 'error');
 	}
 	return;
+
 }
 
 function teacher_admin_import_cisco() {
-
+	$form['#attributes'] = array('enctype' => "multipart/form-data");
+	$form['upload'] = array(
+		'#type' => 'file',
+		'#title' => t('选择要导入的思科网院学生数据表格(XLS格式)'),
+		'#description' => t('文件必须是XLS格式'),
+		'#size' => 40,
+	);
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('导入'),
+	);
+	return $form;
 }
 
 function teacher_admin_import_cisco_submit($form, &$form_state) {
-
+	require_once 'excel_reader2.php';
+	$dest = file_directory_path();
+	if($file = file_save_upload('upload', array('file_validate_extensions' => array('xls')), $dest)) {
+		$data = new Spreadsheet_Excel_Reader($file->filepath, false, 'UTF-8');
+		if($data->val(1, 1) == 'Academy Connection ID') {
+			$rowcount = $data->rowcount();
+			$row = 2;
+			$success = 0;
+			$fail = 0;
+			while($row <= $rowcount) {
+				$cisco = array();
+				$cisco['acid'] = _teacher_admin_excel_filter($data->val($row, 1));
+				$cisco['username'] = _teacher_admin_excel_filter($data->val($row, 5));
+				$cisco['sid'] = _teacher_admin_excel_filter($data->val($row, 4));
+				$cisco['fullname'] = _teacher_admin_excel_filter($data->val($row, 3)).' '._teacher_admin_excel_filter($data->val($row, 2));
+				if(!empty($cisco['acid'])) {
+					$result = db_query("INSERT INTO {cisco} (username, acid, fullname, sid) VALUES ('%s', '%s', '%s', '%s') ON DUPLICATE KEY UPDATE username = VALUES(username), fullname = VALUES(fullname), sid = VALUES(sid)", $cisco['username'], $cisco['acid'], $cisco['fullname'], $cisco['sid']);
+				}
+				if($result) {
+					$success += 1;
+				}
+				else {
+					$fail +=1;
+				}
+				$row += 1;
+			}
+			drupal_set_message('成功导入'.$success.'条学生信息！');
+			if($fail > 0) {
+				drupal_set_message($fail.'条学生信息导入失败，请检查数据格式！', 'error');
+			}
+		} 
+		else {
+			drupal_set_message(t('导入失败，请检查文件格式'), 'error');
+		}
+	}
+	else {
+		drupal_set_message(t('导入失败，请检查文件格式'), 'error');
+	}
+	return;
 }
 
 function teacher_students($callback_arg = '') {
@@ -406,7 +486,7 @@ function teacher_students_filter_form_submit($form, &$form_state) {
  */
 function teacher_students_classes() {
 	$classes = array();
-	$result = db_query('SELECT DISTINCT class FROM {users} WHERE class != 0');
+	$result = db_query('SELECT DISTINCT class FROM {users}');
 	while ($class = db_fetch_object($result)) {
 		$classes[$class->class] = $class->class;
 	}
@@ -506,7 +586,7 @@ function teacher_students_account_list() {
   $accounts = array();
   while ($account = db_fetch_object($result)) {
     $accounts[$account->uid] = '';
-    $form['name'][$account->uid] = array('#value' => theme('username', $account));
+    $form['name'][$account->uid] = array('#value' => $account->name);
     $form['fullname'][$account->uid] = array('#value' => $account->fullname);
     $form['status'][$account->uid] =  array('#value' => $status[$account->status]);
     $form['class'][$account->uid] = array('#value' => $account->class);

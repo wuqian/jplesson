@@ -340,7 +340,7 @@ function student_form(&$node, $form_state) {
 				'#suffix' => '</div>',
 		    '#description' => $node->remark,
 		    '#collapsible' => TRUE,
-		    '#weight' => -30,
+		    '#weight' => -45,
 		  );
 	  }
 	  
