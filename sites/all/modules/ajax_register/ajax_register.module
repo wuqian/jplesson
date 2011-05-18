@@ -97,7 +97,7 @@ function ajax_get_login_block_content() {
     return $block_content;
   }
   else{
-    $block_content = "<div id='ajax_register_block_authenticated'>".t("Welcome: ")."<span class='ajax_register_user_name'>". theme('username', $user) ."</span>". $user_uri ." ". $logout_uri ."</div>";
+    $block_content = "<div id='ajax_register_block_authenticated'>".t("Welcome: ")."<span class='ajax_register_user_name'>". $user->fullname ."</span>"." ". $logout_uri ."</div>";
     return $block_content;
   }
 }

@@ -47,6 +47,28 @@ function phptemplate_preprocess_page(&$vars) {
   if (module_exists('color')) {
     _color_page_alter($vars);
   }
+  // handy helper for themes, not related to 404 issue
+  $vars['base_path'] = base_path();
+
+  // Only does the check if required
+  if(!$vars['show_blocks']) {
+    global $theme;
+    $regions = system_region_list($theme);
+    foreach (array_keys($regions) as $region) {
+      // Only set left and right regions
+      // Drupal core sets the other blocks already
+      // IMHO this shows a real lack of design considerations for leaving these out!
+      if ($region == 'left' || $region == 'right') {
+        $blocks = theme('blocks', $region);
+        if(isset($variables[$region])) {
+          $vars[$region] .= $blocks;
+        }
+        else {
+          $vars[$region] = $blocks;
+        }
+      }
+    }
+  }
 }
 
 /**

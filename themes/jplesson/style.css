@@ -373,7 +373,7 @@ table .form-button, table .form-submit {
 
 #ajax_register_block_anonymous {
   margin-left:725px;
-  padding-top:3px;
+  *padding-top:3px;
   color:#fff;
 }
 
@@ -387,13 +387,13 @@ table .form-button, table .form-submit {
 }
 
 #ajax_register_block_authenticated {
-  margin-left:690px;
-  padding-top:3px;
+  margin-left:700px;
+  *padding-top:3px;
   color:#fff;
 }
 
 #ajax_register_block_authenticated a {
-  margin-right:10px;
+  margin-left:25px;
   color:#fff;
 }
 

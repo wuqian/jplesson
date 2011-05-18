@@ -115,7 +115,15 @@ function student_theme() {
 }
 
 function student_task_list() {
+	global $user;
 	$menu_items = array();
+	$menu_items['个人资料'] = array(
+  	'修改个人资料', 
+  	array(
+  		l('修改个人资料', 'user/'.$user->uid.'/edit'), 
+  		l('绑定思科网院帐号', 'student/notices'), 
+  	),
+  );
   $menu_items['通知'] = array(
   	'查看通知', 
   	array(

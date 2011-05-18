@@ -1073,11 +1073,11 @@ function user_menu() {
     'file' => 'user.pages.inc',
   );
 
-  $items['user/%user/view'] = array(
-    'title' => 'View',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  );
+//  $items['user/%user/view'] = array(
+//    'title' => 'View',
+//    'type' => MENU_DEFAULT_LOCAL_TASK,
+//    'weight' => -10,
+//  );
 
   $items['user/%user/delete'] = array(
     'title' => 'Delete',

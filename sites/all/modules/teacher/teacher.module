@@ -499,7 +499,7 @@ function teacher_students_filters() {
   $classes = teacher_students_classes();
   $filters['class'] = array(
     'title' => t('Class'),
-    'where' => "u.class = %s",
+    'where' => "u.class = '%s'",
     'join' => '',
     'options' => $classes,
   );
@@ -513,25 +513,21 @@ function teacher_students_build_filter_query() {
   $where = $args = $join = array();
   if(isset($_SESSION['teacher_students_filter'])) {
     foreach ($_SESSION['teacher_students_filter'] as $filter) {
-    list($key, $value) = $filter;
-    // This checks to see if this permission filter is an enabled permission for
-    // the authenticated role. If so, then all users would be listed, and we can
-    // skip adding it to the filter query.
-    if ($key == 'permission') {
-      $account = new stdClass();
-      $account->uid = 'user_filter';
-      $account->roles = array(DRUPAL_AUTHENTICATED_RID => 1);
-      if (user_access($value, $account)) {
-        continue;
-      }
-    }
-    $where[] = $filters[$key]['where'];
-    $args[] = $value;
-    $join[] = $filters[$key]['join'];
+	    list($key, $value) = $filter;
+	    if ($key == 'permission') {
+	      $account = new stdClass();
+	      $account->uid = 'user_filter';
+	      $account->roles = array(DRUPAL_AUTHENTICATED_RID => 1);
+	      if (user_access($value, $account)) {
+	        continue;
+	      }
+	    }
+	    $where[] = $filters[$key]['where'];
+	    $args[] = $value;
+	    $join[] = $filters[$key]['join'];
+  	}
   }
-  }
-
-  $where = !empty($where) ? 'AND '. implode(' AND ', $where) : '';
+  $where = !empty($where) ? 'WHERE '. implode(' AND ', $where) : '';
   $join = !empty($join) ? ' '. implode(' ', array_unique($join)) : '';
 
   return array('where' => $where,
@@ -552,8 +548,8 @@ function teacher_students_account_list() {
     t('Operations')
   );
   
-  $sql = 'SELECT u.uid, u.name, u.fullname, u.status, u.class, u.access FROM {users} u WHERE u.class != 0 '. $filter['where'];
-  $query_count = 'SELECT COUNT(u.uid) FROM {users} u WHERE u.class != 0 '. $filter['where'];
+  $sql = 'SELECT u.uid, u.name, u.fullname, u.status, u.class, u.access FROM {users} u '.$filter['where'];
+  $query_count = 'SELECT COUNT(u.uid) FROM {users} u '.$filter['where'];
   
   $sql .= tablesort_sql($header);
 
