@@ -283,7 +283,7 @@ span.submitted, .description {
 }
 
 .form-button, .form-submit {
-  margin: 2em 0.5em 1em 0; /* LTR */
+  margin: 0em 0.5em 1em 0; /* LTR */
 }
 
 #edit-preview {

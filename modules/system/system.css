@@ -133,11 +133,12 @@ tr.merge-up, tr.merge-up td, tr.merge-up th {
   border: 2px solid red;
 }
 .form-item .description {
-  font-size: 0.85em;
+
 }
 .form-item label {
   display: block;
   font-weight: bold;
+  margin-bottom: 5px;
 }
 .form-item label.option {
   display: inline;

@@ -542,14 +542,15 @@ function teacher_students_account_list() {
     array(),
     array('data' => t('Username'), 'field' => 'u.name', 'sort' => 'asc'),
     array('data' => t('Fullname'), 'field' => 'u.fullname'),
-    array('data' => t('Status'), 'field' => 'u.status'),
     array('data' => t('Class'), 'field' => 'u.class'),
-    array('data' => t('Last access'), 'field' => 'u.access'),
+    array('data' => t('思科网院ID'), 'field' => 'c.acid'),
+    array('data' => t('思科网院用户名'), 'field' => 'c.username'),
+    array('data' => t('Status'), 'field' => 'u.status'),
     t('Operations')
   );
   
-  $sql = 'SELECT u.uid, u.name, u.fullname, u.status, u.class, u.access FROM {users} u '.$filter['where'];
-  $query_count = 'SELECT COUNT(u.uid) FROM {users} u '.$filter['where'];
+  $sql = 'SELECT u.uid, u.name, u.fullname, u.class, c.acid, c.username, u.status FROM {users} u LEFT JOIN {cisco} c ON u.cisco_id = c.acid '.$filter['where'];
+  $query_count = 'SELECT COUNT(u.uid) FROM {users} u LEFT JOIN {cisco} c ON u.cisco_id = c.acid '.$filter['where'];
   
   $sql .= tablesort_sql($header);
 
@@ -584,9 +585,11 @@ function teacher_students_account_list() {
     $accounts[$account->uid] = '';
     $form['name'][$account->uid] = array('#value' => $account->name);
     $form['fullname'][$account->uid] = array('#value' => $account->fullname);
-    $form['status'][$account->uid] =  array('#value' => $status[$account->status]);
     $form['class'][$account->uid] = array('#value' => $account->class);
-    $form['last_access'][$account->uid] =  array('#value' => $account->access ? t('@time ago', array('@time' => format_interval(time() - $account->access))) : t('never'));
+    $form['acid'][$account->uid] = array('#value' => $account->acid);
+    $form['cisco_username'][$account->uid] = array('#value' => $account->username);
+    $form['status'][$account->uid] =  array('#value' => $status[$account->status]);
+    //$form['last_access'][$account->uid] =  array('#value' => $account->access ? t('@time ago', array('@time' => format_interval(time() - $account->access))) : t('never'));
     $form['operations'][$account->uid] = array('#value' => l(t('edit'), "user/$account->uid/edit", array('query' => $destination)));
   }
   $form['accounts'] = array(
@@ -622,13 +625,14 @@ function teacher_students_multiple_delete_confirm() {
 
 function theme_teacher_students_account_list($form) {
 	// Overview table:
-  $header = array(
-    theme('table_select_header_cell'),
-    array('data' => t('Username'), 'field' => 'u.name'),
+	$header = array(
+    array(),
+    array('data' => t('Username'), 'field' => 'u.name', 'sort' => 'asc'),
     array('data' => t('Fullname'), 'field' => 'u.fullname'),
-    array('data' => t('Status'), 'field' => 'u.status'),
     array('data' => t('Class'), 'field' => 'u.class'),
-    array('data' => t('Last access'), 'field' => 'u.access'),
+    array('data' => t('思科网院ID'), 'field' => 'c.acid'),
+    array('data' => t('思科网院用户名'), 'field' => 'c.username'),
+    array('data' => t('Status'), 'field' => 'u.status'),
     t('Operations')
   );
 
@@ -639,9 +643,10 @@ function theme_teacher_students_account_list($form) {
         drupal_render($form['accounts'][$key]),
         drupal_render($form['name'][$key]),
         drupal_render($form['fullname'][$key]),
-        drupal_render($form['status'][$key]),
         drupal_render($form['class'][$key]),
-        drupal_render($form['last_access'][$key]),
+        drupal_render($form['acid'][$key]),
+        drupal_render($form['username'][$key]),
+        drupal_render($form['status'][$key]),
         drupal_render($form['operations'][$key]),
       );
     }

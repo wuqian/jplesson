@@ -58,6 +58,13 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['student/cisco'] = array(
+    'title' => '绑定思科网院帐号',
+ 		'page callback' => 'drupal_get_form',
+    'page arguments' => array('student_cisco_bind'),
+  	'access arguments' => array('access student pages'), 
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -121,7 +128,7 @@ function student_task_list() {
   	'修改个人资料', 
   	array(
   		l('修改个人资料', 'user/'.$user->uid.'/edit'), 
-  		l('绑定思科网院帐号', 'student/notices'), 
+  		l('绑定思科网院帐号', 'student/cisco'), 
   	),
   );
   $menu_items['通知'] = array(
@@ -503,4 +510,35 @@ function theme_student_nodes_list($form) {
   $output .= drupal_render($form);
 
   return $output;
+}
+
+function student_cisco_bind() {
+	$form['cisco_id'] = array(
+  '#type' => 'textfield',
+  '#title' => t('输入思科网院ID(Academy Connection ID)'),
+  '#size' => 30,
+  '#maxlength' => 30,
+  '#required' => TRUE,
+);
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('绑定'),
+	);
+	return $form;
+}
+
+function student_cisco_bind_submit($form, &$form_state) {
+	global $user;
+	$result = db_query("SELECT * FROM {cisco} WHERE acid = '%s'", $form_state['values']['cisco_id']);
+	if(db_fetch_object($result)) {
+		$update = db_query('UPDATE {users} SET cisco_id = "%s" WHERE uid = %d', $form_state['values']['cisco_id'], $user->uid);
+		if($update) {
+			drupal_set_message('绑定成功');
+		} else {
+			drupal_set_message('绑定失败，请检查输入格式', 'error');
+		}
+	}
+	else {
+		drupal_set_message('此思科网院ID不存在', 'error');
+	}
 }
