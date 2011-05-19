@@ -123,6 +123,9 @@ function student_theme() {
 
 function student_task_list() {
 	global $user;
+	if(!user_access('access student pages')) {
+		return MENU_ACCESS_DENIED;
+	}
 	$menu_items = array();
 	$menu_items['个人资料'] = array(
   	'修改个人资料', 

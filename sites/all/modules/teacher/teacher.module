@@ -161,6 +161,9 @@ function teacher_theme() {
 
 
 function teacher_task_list() {
+	if(!user_access('access teacher pages')) {
+		return MENU_ACCESS_DENIED;
+	}
 	$menu_items = array();
   $menu_items['通知管理'] = array(
   	'通知发布与管理', 
@@ -645,7 +648,7 @@ function theme_teacher_students_account_list($form) {
         drupal_render($form['fullname'][$key]),
         drupal_render($form['class'][$key]),
         drupal_render($form['acid'][$key]),
-        drupal_render($form['username'][$key]),
+        drupal_render($form['cisco_username'][$key]),
         drupal_render($form['status'][$key]),
         drupal_render($form['operations'][$key]),
       );
