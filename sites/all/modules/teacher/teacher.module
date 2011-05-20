@@ -161,6 +161,7 @@ function teacher_theme() {
 
 
 function teacher_task_list() {
+	global $user;
 	if(!user_access('access teacher pages')) {
 		return MENU_ACCESS_DENIED;
 	}
