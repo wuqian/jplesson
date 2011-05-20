@@ -24,6 +24,7 @@ body {
 input {
   font: 12px/100% Verdana, sans-serif;
   color: #494949;
+  padding-left:3px;
 }
 
 textarea, select {
@@ -35,32 +36,36 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
   padding: 0;
   font-weight: normal;
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: Verdana, STHeiTi, simsun, Helvetica, Arial, sans-serif;
 }
 
 h1 {
-  font-size: 170%;
+  font-size: 18px;
+  font-weight:bold;
 }
 
 h2 {
-  font-size: 160%;
+  font-size: 16px;
+  font-weight:bold;
   line-height: 130%;
 }
 
 h3 {
-  font-size: 140%;
+  font-weight:bold;
+  font-size: 14px;
+  line-height: 130%;
 }
 
 h4 {
-  font-size: 130%;
+  font-size: 14px;
 }
 
 h5 {
-  font-size: 120%;
+  font-size: 14px;
 }
 
 h6 {
-  font-size: 110%;
+  font-size: 14px;
 }
 
 ul, quote, code, fieldset {
@@ -282,7 +287,17 @@ span.submitted, .description {
   margin-bottom: 2em;
 }
 
+.form-text {
+  height:1.5em;
+}
+
+.form-select {
+  height:2em;
+}
+
 .form-button, .form-submit {
+  padding:4px 14px;
+  height:26px;
   margin: 0em 0.5em 1em 0; /* LTR */
 }
 
@@ -1201,6 +1216,7 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
   width:610px;
   height:301px;
   padding:5px;
+  *padding-bottom:3px;
   border:1px solid #bfbfbf;
   border-right:none;
 }
@@ -1243,33 +1259,64 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
 }
 
 #block-teacher-home-course-list .course_term{
+  background-image:none;
+  background-color:#eeeeee;
+  padding-top:5px;
+  padding-bottom:5px;
+  padding-left:15px;
   color:#666666;
   font-size:14px;
   font-weight:bold;
   clear:both;
 }
-#block-teacher-home-course-list li {
+
+
+#block-teacher-home-course-list .course_list_item{
   background:none;
   padding:0;
-  margin:0;
+  padding-bottom:10px;
+  margin-top:10px;
 }
 
-.course_list_item {
-  height:100px;
-  margin-top:20px;
+
+
+#block-teacher-home-course-list .course_list_item .course_description {
+  background:none;
+  padding-top:5px;
+  padding-left:16px;
+  color:#999999;
+  line-height:2em;
+  font-size:12px;
+  font-weight:normal;
 }
 
-.course_node {
+#block-teacher-home-course-list  .course_node_list{
   padding:0;
+  padding-left:15px;
+  margin:0;
+  background:none;
+}
+
+
+#block-teacher-home-course-list  .course_node_list .item-list{
+  padding-top:0px;
+}
+
+#block-teacher-home-course-list  .course_node_list ul{
+  overflow:hidden;
+  *height:50px;
+  
+}
+
+#block-teacher-home-course-list .course_node {
   display:block;
+  height:20px;
   width:200px;
   float:left;
 }
 
-.course_description {
-  color:#999999;
-  font-size:12px;
-  font-weight:normal;
+#block-teacher-home-course-list .course_node .last {
+
 }
 
 #block-block-4 {
@@ -1331,6 +1378,7 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
 }
 .view-NewsPage .views-field-title {
   font-size:14px;
+  font-weight:bold;
   display:inline;
 }
 

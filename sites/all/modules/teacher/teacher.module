@@ -165,6 +165,12 @@ function teacher_task_list() {
 		return MENU_ACCESS_DENIED;
 	}
 	$menu_items = array();
+	$menu_items['个人资料'] = array(
+  	'修改个人资料', 
+  	array(
+  		l('修改个人资料', 'user/'.$user->uid.'/edit'), 
+  	),
+  );
   $menu_items['通知管理'] = array(
   	'通知发布与管理', 
   	array(
