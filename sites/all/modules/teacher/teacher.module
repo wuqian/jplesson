@@ -183,7 +183,7 @@ function teacher_task_list() {
     '作业发布与管理、查看作业提交状态', 
   	array(
   		l('发布新作业', 'teacher/tests/new'), 
-  		l('作业管理', 'teacher/tests'), 
+  		l('作业管理与批改', 'teacher/tests'), 
   	),
   );
   $menu_items['学生管理'] = array(
@@ -622,10 +622,6 @@ function teacher_students_account_list_submit($form, &$form_state) {
   }
 }
 
-function teacher_students_multiple_delete_confirm() {
-	
-}
-
 function theme_teacher_students_account_list($form) {
 	// Overview table:
 	$header = array(
@@ -675,29 +671,6 @@ function teacher_admin_notices() {
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
   $multilanguage = (module_exists('locale') || $count);
-
-  $form['options'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Update options'),
-    '#prefix' => '<div class="container-inline">',
-    '#suffix' => '</div>',
-  );
-  $options = array();
-  module_load_include('inc', 'node', 'node.admin');
-  foreach (module_invoke_all('node_operations') as $operation => $array) {
-    $options[$operation] = $array['label'];
-  }
-  $form['options']['operation'] = array(
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => 'approve',
-  );
-  $form['options']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Update'),
-    '#submit' => array('node_admin_nodes_submit'),
-  );
-
   $languages = language_list();
   $destination = drupal_get_destination();
   $nodes = array();
@@ -922,28 +895,6 @@ function taxonomy_term_confirm_delete_submit($form, &$form_state) {
 function teacher_admin_lessons(&$form_state, $course) {
 	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "lesson" AND t.tid = '.$course.' ORDER BY n.changed DESC'), 50, 0, NULL);
 
-  $form['options'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Update options'),
-    '#prefix' => '<div class="container-inline">',
-    '#suffix' => '</div>',
-  );
-  $options = array();
-  module_load_include('inc', 'node', 'node.admin');
-  foreach (module_invoke_all('node_operations') as $operation => $array) {
-    $options[$operation] = $array['label'];
-  }
-  $form['options']['operation'] = array(
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => 'approve',
-  );
-  $form['options']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Update'),
-    '#submit' => array('node_admin_nodes_submit'),
-  );
-
   $languages = language_list();
   $destination = drupal_get_destination();
   $nodes = array();
@@ -962,35 +913,34 @@ function teacher_admin_lessons(&$form_state, $course) {
   return $form;
 }
 
-function teacher_admin_tests() {
+function teacher_admin_tests(&$form_state) {
 	global $user;
 	$result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid WHERE n.type = "test" AND n.uid = '.$user->uid.' ORDER BY n.changed DESC'), 50, 0, NULL);
-
+	
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
   $multilanguage = (module_exists('locale') || $count);
-
-  $form['options'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Update options'),
-    '#prefix' => '<div class="container-inline">',
-    '#suffix' => '</div>',
-  );
-  $options = array();
-  module_load_include('inc', 'node', 'node.admin');
-  foreach (module_invoke_all('node_operations') as $operation => $array) {
-    $options[$operation] = $array['label'];
-  }
-  $form['options']['operation'] = array(
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => 'approve',
-  );
-  $form['options']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Update'),
-    '#submit' => array('node_admin_nodes_submit'),
-  );
+//	$form['options'] = array(
+//    '#type' => 'fieldset',
+//    '#title' => t('Update options'),
+//    '#prefix' => '<div class="container-inline">',
+//    '#suffix' => '</div>',
+//  );
+//  $options = array();
+//  
+//  foreach (module_invoke_all('node_operations') as $operation => $array) {
+//    $options[$operation] = $array['label'];
+//  }
+//  $form['options']['operation'] = array(
+//    '#type' => 'select',
+//    '#options' => $options,
+//    '#default_value' => 'approve',
+//  );
+//  $form['options']['submit'] = array(
+//    '#type' => 'submit',
+//    '#value' => t('Update'),
+//    '#submit' => array('node_admin_nodes_submit'),
+//  );
 
   $languages = language_list();
   $destination = drupal_get_destination();
@@ -1082,29 +1032,12 @@ function teacher_admin_news() {
   // Enable language column if locale is enabled or if we have any node with language
   $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
   $multilanguage = (module_exists('locale') || $count);
-
   $form['options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Update options'),
     '#prefix' => '<div class="container-inline">',
     '#suffix' => '</div>',
   );
-  $options = array();
-  module_load_include('inc', 'node', 'node.admin');
-  foreach (module_invoke_all('node_operations') as $operation => $array) {
-    $options[$operation] = $array['label'];
-  }
-  $form['options']['operation'] = array(
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => 'approve',
-  );
-  $form['options']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Update'),
-    '#submit' => array('node_admin_nodes_submit'),
-  );
-
   $languages = language_list();
   $destination = drupal_get_destination();
   $nodes = array();
@@ -1132,7 +1065,7 @@ function theme_teacher_admin_nodes($form) {
   $header[] = t('Operations');
   $output = '';
 
-  $output .= drupal_render($form['options']);
+  //$output .= drupal_render($form['options']);
   if ($has_posts) {
     foreach (element_children($form['title']) as $key) {
       $row = array();
@@ -1147,7 +1080,7 @@ function theme_teacher_admin_nodes($form) {
 
   }
   else {
-    $rows[] = array(array('data' => t('No posts available.'), 'colspan' => '6'));
+    $rows[] = array(array('data' => t('无内容'), 'colspan' => '6'));
   }
 
   $output .= theme('table', $header, $rows);

@@ -502,7 +502,7 @@ function theme_student_nodes_list($form) {
 
   }
   else {
-    $rows[] = array(array('data' => t('No posts available.'), 'colspan' => '6'));
+    $rows[] = array(array('data' => t('无内容'), 'colspan' => '6'));
   }
 
   $output .= theme('table', $header, $rows);
