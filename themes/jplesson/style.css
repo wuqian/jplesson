@@ -123,7 +123,7 @@ ul li, ul.menu li, .item-list ul li, li.leaf {
   padding: 0 0 .2em 1.5em;
   list-style-type: none;
   list-style-image: none;
-  background: transparent url(images/menu-leaf.gif) no-repeat 1px .35em; /* LTR */
+  background: transparent url(images/menu-leaf.gif) no-repeat 1px .5em; /* LTR */
 }
 
 ol li {
@@ -1237,9 +1237,39 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
   color:#fff;
 }
 
-#block-views-lessonList-block_1 {
+#block-teacher-home-course-list {
   background:url(images/lessons_title.png) no-repeat 0 3px;
   padding-top:35px;
+}
+
+#block-teacher-home-course-list .course_term{
+  color:#666666;
+  font-size:14px;
+  font-weight:bold;
+  clear:both;
+}
+#block-teacher-home-course-list li {
+  background:none;
+  padding:0;
+  margin:0;
+}
+
+.course_list_item {
+  height:100px;
+  margin-top:20px;
+}
+
+.course_node {
+  padding:0;
+  display:block;
+  width:200px;
+  float:left;
+}
+
+.course_description {
+  color:#999999;
+  font-size:12px;
+  font-weight:normal;
 }
 
 #block-block-4 {

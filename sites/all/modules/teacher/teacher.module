@@ -1092,3 +1092,56 @@ function theme_teacher_admin_nodes($form) {
 
   return $output;
 }
+
+function teacher_block($op = 'list', $delta = '', $edit = array()) {
+  switch ($op) {
+    case 'list':
+      $blocks['home-course-list'] = array(
+        'info'       => t('Course List'),
+      );
+      return $blocks;
+    case 'view':
+      switch ($delta) {
+        case 'home-course-list':
+          $block['content'] = get_course_list();
+          break;
+      }
+      return $block;
+  }
+}
+
+function get_course_list() {
+	$type = 'ul';
+	$attributes = array('class' => 'course_list');
+	$items = array();
+	$result = db_query('SELECT tid, name, description FROM {term_data} ORDER BY weight');
+	while ($term = db_fetch_object($result)) {
+
+		$item_ul['name'] = array(
+    	'data' => $term->name,
+			'class' => 'course_term',
+		);
+		$item_ul['description'] = array(
+			'data' => $term->description,
+			'class' => 'course_description',
+		);
+		$node_items = array();
+		$node_result = db_query('SELECT n.nid, n.title FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid WHERE t.tid = %d AND n.status = 1', $term->tid);
+		while ($node = db_fetch_object($node_result)) {
+			$node_items[] = array(
+				'data' => l($node->title, 'node/'.$node->nid),
+				'class' => 'course_node',
+			);
+		}
+		$item_ul['list'] = array(
+			'data' => theme_item_list($node_items, NULL, 'ul',NULL),
+			'class' => 'course_node_list',
+		);
+		$items[] = array(
+			'data' => theme_item_list($item_ul, NULL, 'ul',NULL),
+			'class' => 'course_list_item',
+		);
+		
+	}
+	return theme_item_list($items, NULL, $type, $attributes);
+}
