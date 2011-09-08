@@ -1387,3 +1387,14 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
 .view-NewsPage .views-row {
   margin-bottom:15px;
 }
+
+#user-register {
+  padding-left:25px;
+}
+#user-login {
+  padding-left:25px;
+}
+
+#user-pass {
+  padding-left:25px;
+}

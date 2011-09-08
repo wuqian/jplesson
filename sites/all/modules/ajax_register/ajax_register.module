@@ -134,14 +134,14 @@ function ajax_register_theme($existing, $type, $theme, $path) {
 }
 
 function theme_user_login_link($attributes, $query){
-$attributes['class'] = $attributes['class'].' thickbox';
-$login_uri = l(t('Login'), 'ajax_register/login',array('attributes'=>$attributes, 'query'=>$query));
+//$attributes['class'] = $attributes['class'].' thickbox';
+$login_uri = l(t('Login'), 'user/login',array('attributes'=>$attributes, 'query'=>$query));
 return $login_uri;
 }
 
 function theme_user_register_link($attributes, $query){
-$attributes['class'] = $attributes['class'].' thickbox';
-$register_uri = user_register_access()? l(t('Register'), 'ajax_register/register',array('attributes'=>$attributes, 'query'=>$query)) : '';
+//$attributes['class'] = $attributes['class'].' thickbox';
+$register_uri = user_register_access()? l(t('Register'), 'user/register',array('attributes'=>$attributes, 'query'=>$query)) : '';
 return $register_uri;
 }
 
