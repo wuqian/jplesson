@@ -291,10 +291,6 @@ span.submitted, .description {
   height:1.5em;
 }
 
-.form-select {
-  height:2em;
-}
-
 .form-button, .form-submit {
   padding:4px 14px;
   height:26px;

@@ -168,7 +168,7 @@ function student_help($path, $arg) {
 function student_notices() {
 	global $user;
 	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.*, u.name, u.fullname FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "notice" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+  	$result = pager_query('SELECT n.*, u.name, u.fullname FROM {node} n '.' INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "notice" AND n.status = 1 AND nc.field_class_value = "'.$user->class.'" ORDER BY n.changed DESC');
 	}
   $destination = drupal_get_destination();
   $nodes = array();
@@ -223,7 +223,7 @@ function student_lessons() {
 function student_tests() {
 	global $user;
 	if (!empty($user->class)) {
-  	$result = pager_query('SELECT n.*, u.fullname, u.name FROM {node} n INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND nc.field_class_value = '.$user->class.' ORDER BY n.changed DESC');
+  	$result = pager_query('SELECT n.*, u.fullname, u.name FROM {node} n INNER JOIN {users} u ON n.uid = u.uid '.' INNER JOIN {content_field_class} nc ON n.nid = nc.nid '.' WHERE n.type = "test" AND n.status = 1 AND nc.field_class_value = "'.$user->class.'" ORDER BY n.changed DESC');
 	}
   $destination = drupal_get_destination();
   $nodes = array();

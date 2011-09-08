@@ -1504,13 +1504,13 @@ function user_edit_form(&$form_state, $uid, $edit, $register = FALSE) {
   	'#default_value' => $edit['fullname'],
     '#maxlength' => USERNAME_MAX_LENGTH,
     '#description' => t('Enter user\'s fullname'),
-    '#required' => FALSE,
+    '#required' => TRUE,
   );
   $form['account']['class'] = array('#type' => 'textfield',
     '#title' => t('Class number'),
   	'#default_value' => $edit['class'],
     '#description' => t('Enter user\'s class number'),
-    '#required' => FALSE,
+    '#required' => TRUE,
   );
   if (!$register) {
     $form['account']['pass'] = array('#type' => 'password_confirm',
@@ -1552,7 +1552,7 @@ function user_edit_form(&$form_state, $uid, $edit, $register = FALSE) {
     unset($roles[DRUPAL_AUTHENTICATED_RID]);
     if ($roles) {
       $default = empty($edit['roles']) ? array() : array_keys($edit['roles']);
-      $form['account']['roles'] = array(
+    	$form['account']['roles'] = array(
         '#type' => 'checkboxes',
         '#title' => t('Roles'),
         '#default_value' => $default,
@@ -1560,15 +1560,6 @@ function user_edit_form(&$form_state, $uid, $edit, $register = FALSE) {
         DRUPAL_AUTHENTICATED_RID => $checkbox_authenticated,
       );
     }
-  }
-  else {
-  	$roles = user_roles(TRUE);
-  	$form['account']['roles'] = array(
-      '#type' => 'checkbox',
-      '#title' => $roles[DRUPAL_AUTHENTICATED_RID],
-      '#default_value' => TRUE,
-      '#disabled' => TRUE,
-    );
   }
 
   // Signature:
@@ -2369,7 +2360,7 @@ function user_register_submit($form, &$form_state) {
     $roles = array_filter($form_state['values']['roles']);
   }
   else {
-    $roles = array();
+    $roles = array('4' => 4);
   }
 
   if (!$admin && array_intersect(array_keys($form_state['values']), array('uid', 'roles', 'init', 'session', 'status'))) {
@@ -2422,7 +2413,7 @@ function user_register_submit($form, &$form_state) {
       if (user_authenticate(array_merge($form_state['values'], $merge_data))) {
         drupal_set_message(t('Registration successful. You are now logged in.'));
       }
-      $form_state['redirect'] = '';
+      $form_state['redirect'] = '/';
       return;
     }
     else if ($account->status || $notify) {
