@@ -7,9 +7,9 @@
     <?php print $head ?>
     <title><?php print $head_title ?></title>
     <?php print $styles ?>
-    <script src="/JP/misc/jquery.js" type="text/javascript"></script>
+    <script src="/misc/jquery.js" type="text/javascript"></script>
     <?php print $scripts ?>
-    <script src="/JP/misc/liHover.js" type="text/javascript"></script>
+    <script src="/misc/liHover.js" type="text/javascript"></script>
     <!--[if lt IE 7]>
       <?php print phptemplate_get_ie_styles(); ?>
     <![endif]-->
