@@ -15,7 +15,7 @@
  */
 function ajax_register_init() {
   //Declare the thickbox image path
-  $path = 'var tb_pathToImage ="'. drupal_get_path('module', 'ajax_register') .'/images/loading.gif";';
+  $path = 'var tb_pathToImage ="/sites/all/modules/ajax_register/images/loading.gif";';
   drupal_add_js($path, 'inline');
   drupal_add_js(drupal_get_path('module', 'ajax_register') ."/thickbox.js");
   drupal_add_css(drupal_get_path('module', 'ajax_register') ."/thickbox.css");
