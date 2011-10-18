@@ -65,6 +65,20 @@ function student_menu() {
   	'access arguments' => array('access student pages'), 
     'type' => MENU_CALLBACK,
   );
+  $items['student/paper/list']=array(
+		'title' => t('试卷列表'),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('student_examination_list'),
+		'access arguments' => array('access student pages'),
+		'type' => MENU_CALLBACK,
+	);
+	$items['student/paper/list/%']=array(
+		'title' => t('试题'),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('student_all', 3),
+		'access arguments' => array('access student pages'),
+		'type' => MENU_CALLBACK,
+	);
   return $items;
 }
 
@@ -118,6 +132,9 @@ function student_theme() {
     'student_test_submit' => array(
       'arguments' => array('form' => NULL),
     ),
+    'student_examination_list' => array(
+    	'arguments' => array('form' => array()),
+    ),
 	);
 }
 
@@ -151,6 +168,34 @@ function student_task_list() {
   	array(
   		l('作业列表', 'student/tests'), 
   		l('已提交作业', 'student/tests/finished'), 
+  	),
+  );
+  $menu_items['自测自评'] = array(
+  	'自测自评',
+  	array(
+  		l('自测试卷列表','student/paper/list'),
+  	),
+  );
+  $menu_items['师生互动'] = array(
+  	'师生互动交流论坛',
+  	array(
+  		l('师生互动论坛','forum/14'),
+  	),
+  );
+  $menu_items['扩展阅读'] = array(
+  	'扩展阅读',
+  	array(
+  		l('路由与交换','node/68'),
+  		l('计算机网络基础','node/67'),
+  		l('安全协议','node/69'),
+  		l('防火墙技术','node/70'),
+  	),
+  );
+  $menu_items['常用链接'] = array(
+  	'常用链接',
+  	array(
+  		l('<img src="misc/free1.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
+  		l('<img src="misc/cisco.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
   	),
   );
   return theme('teacher_task_list', $menu_items);
@@ -543,5 +588,175 @@ function student_cisco_bind_submit($form, &$form_state) {
 	}
 	else {
 		drupal_set_message('此思科网院ID不存在', 'error');
+	}
+}
+/*
+ * Examination list
+ */
+/*function student_examination_list(&$form_state){
+	$h = db_result(db_query("SELECT pid from {questionpaper} limit 0,1"));
+	$e = db_result(db_query("SELECT pid from {questionpaper} order by pid desc limit 0,1"));
+	
+	for($i=$h;$i<=$e;$i++){
+		if($pid = db_result(pager_query("SELECT pid FROM {questionpaper} WHERE pid=$i", 1, 0, NULL))){
+		$form[][$i] = array(
+			'#type' => 'item',
+			'#value' => l(t('The examination paper of'.' '.$pid),"student/paper/list/".$pid),
+		);
+		}
+		$form['pager'] = array('#value' => theme('pager', NULL, 1, 0));
+	}
+	return $form;
+}*/
+ function student_examination_list(&$form_state){
+	$result = pager_query("SELECT * FROM {questionpaper}", 50, 0, NULL);
+	
+	/*while($results = db_fetch_object($result)){
+		$form[][$i] = array(
+			'#type' => 'item',
+			'#value' => l(t('The examination paper of'.' '.$results->pid),"student/paper/list/".$results->pid),
+		);
+	}*/
+	while($term = db_fetch_object($result)){
+		$results[] = $term;
+	}
+	$form = array('#tree' => TRUE);
+	if(!empty($results)) {
+		foreach($results as $res){
+			$form[$res->pid]['#config'] = (array)$res;
+			$form[$res->pid]['pid'] = array('#value' => 'examination paper of'.' '.check_plain($res->pid));
+			$form[$res->pid]['class_id'] = array('#value' => check_plain($res->class_id));
+			$form[$res->pid]['check'] = array('#value' => l(t('答题'),"student/paper/list/".$res->pid));
+		}
+	} else {
+		$form['empty'] = array('#type' => 'markup', '#value' => "没有试卷");
+	}
+	if(count($res) > 1){
+		$form['submit'] = array('#type' => 'submit','#value' => t('Save'));
+	}
+	else if(isset($res)){
+		unset($form[$res->pid]['weight']);
+	}
+	$form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+	return $form;
+}
+function student_examination_list_submit(){
+	foreach($form_state['values'] as $pid => $vocabulary){
+		if(is_numeric($pid) && $form[$pid]['#vocabulary']['weight'] != $form_state['values'][$pid]['weight']){
+			$form[$pid]['#vocabulary']['weight'] = $form_state['values'][$pid]['weight'];
+			taxonomy_save_vocabulary($form[$pid]['#vocabulary']);
+		}
+	}
+}
+function theme_student_examination_list($form){
+	$rows = array();
+	foreach(element_children($form) as $key){
+		if(isset($form[$key]['pid'])){
+			$vocabulary = &$form[$key];
+			
+			$row = array();
+			$row[] = drupal_render($vocabulary['pid']);
+			$row[] = drupal_render($vocabulary['class_id']);
+			$row[] = drupal_render($vocabulary['check']);
+			if(isset($vocabulary['weight'])){
+				$vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';
+				$row[] = drupal_render($vocabulary['weight']);
+			}
+			$rows[] = array('data' => $row,'class' => 'student-listss');
+		}
+	}
+	if(empty($rows)){
+		$rows = array(array('data' => t('No vocabulary'),'colspan' => 2));
+	}
+	$header = array(t('试卷列表'),t('班级'),t('编辑'));
+	if(isset($form['submit'])){
+		$header[] = t('weight');
+		drupal_add_tabledrag('taxonomy','order','sibling','vocabulary-weight'); 
+	}
+	return theme('table',$header,$rows,array('id'=>'student-list')).drupal_render($form);
+}
+/*
+ * Generating examination paper;
+ */
+function student_all(&$form_state, $op){
+	$form = array();
+	$resultarr = db_result(db_query("SELECT options FROM {questionpaper} WHERE pid=$op"));
+	$resultarrs = unserialize($resultarr);
+	//Access key
+	$resultarrs_key = array_keys($resultarrs);
+	$i=1;
+	$form['pid'] = array(
+		'#type' => 'hidden',
+		'#value' => $op,
+	);
+	for($j=0;$j<=count($resultarrs_key)-1;$j++){
+		$result = db_query("SELECT * FROM {questionpaper} INNER JOIN {teacher} ON teacher.id = '$resultarrs_key[$j]' AND questionpaper.pid=$op");
+		while($data = db_fetch_object($result)){
+		$form[][$i] = array(
+			'#type' => 'item',
+			//'#default_value' => '1',
+			'#title' => $i.'.'.$data->topic,
+		);
+		$arr = unserialize($data->option_a);
+		$form[][$i] = array(
+			'#type' => 'radios',
+			'#options' => $arr,
+		);
+		$i++;
+	}
+	}
+	$form['#validate'] = array('subject_all_validate');
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => '提交',
+		'#submit' => array('subject_all_submit'),
+	);
+	
+	return $form;
+}
+/*
+ * Students submit answer validate;
+ * 
+ */
+function student_all_validate(&$form,&$form_state){
+	$i=1;
+	$op = $form_state['values']['pid'];
+	
+	$resultarr = db_result(db_query("select options from {questionpaper} where pid=$op"));
+	$resultarrs = unserialize($resultarr);
+	//Access key
+	//$resultarrs_key = array_keys($resultarrs);
+	
+	$results_values = array_values($resultarrs);
+	for($i=0;$i<count($results_values);$i++){
+	$subject_maxdisp = $results_values[$i];
+	if($subject_maxdisp != $_POST[$i+1]){
+		form_set_error('$i','Enter your answer is wrong,please input again');
+		}
+	}
+}
+/*
+ * Submit answers to subject data sheet;
+ */
+function student_all_submit(&$form,&$form_state){
+	global $user;
+	$op = $form_state['values']['pid'];
+	
+	$i=1;
+	$corrects = array();
+	$resultarr = db_result(db_query("select options from {questionpaper} where pid=$op"));
+	$resultarrs = unserialize($resultarr);
+	
+	for($i=1;$i<=count($resultarrs);$i++){
+	$corrects[$i] = $_POST[$i];
+	}
+	$correctarr = serialize($corrects);
+	$subject_maxdisp = db_result(db_query("SELECT pid from {questionpaper} where pid = $op"));
+	db_query("INSERT INTO {answer} (id,pid,uid,optionx)
+						 VALUES(null,'%s','%s','%s')",$subject_maxdisp,
+						 $user->uid,$correctarr);
+	if(db_last_insert_id('answer','id')){
+		drupal_set_message('Successfull input');
+		
 	}
 }

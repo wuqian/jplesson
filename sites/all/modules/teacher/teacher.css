@@ -1,0 +1,40 @@
+.teacher-form .form-radios {
+  width:50px;
+  float:left;
+}
+.teacher-form .form-radios #edit-radios-0-wrapper {
+  padding:18px 0;
+  
+}
+.teacher-form .form-radios #edit-radios-1-wrapper {
+  
+  padding-top:15px;
+}
+.teacher-form .form-radios #edit-radios-2-wrapper {
+  
+  padding-top:35px;
+}
+.teacher-form .form-radios #edit-radios-3-wrapper {
+  
+  padding-top:35px;
+}
+.teacher-form #edit-topic-wrapper {
+  
+  margin-left:50px;
+}
+.teacher-form #edit-submit {
+  margin-left:50px;
+}
+.teacher-all-answer .form-item {
+  float:left;
+  width:200px;
+}
+#edit-class-id-wrapper label {
+	float:left;
+}
+#edit-type-wrapper label {
+	float:left;
+}
+#edit-type-wrapper {
+	margin-left:50px;
+}

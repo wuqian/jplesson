@@ -1398,3 +1398,13 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
 #user-pass {
   padding-left:25px;
 }
+
+.admin-panel img {
+	border: 1px solid #aaaaaa;
+	background-color: #eeeeee;
+	padding:2px;
+}
+
+.admin-panel a:hover img {
+	background-color: #cccccc;
+}
