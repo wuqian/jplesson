@@ -191,11 +191,12 @@ function student_task_list() {
   		l('防火墙技术','node/70'),
   	),
   );
+  global $base_url;
   $menu_items['常用链接'] = array(
   	'常用链接',
   	array(
-  		l('<img src="/misc/free1.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
-  		l('<img src="/misc/cisco.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
+  		l('<img src="' . $base_url . '/misc/free1.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
+  		l('<img src="' . $base_url . '/misc/cisco.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
   	),
   );
   return theme('teacher_task_list', $menu_items);
