@@ -275,6 +275,12 @@ function teacher_task_list() {
   		l('师生互动论坛','forum/14'),
   	),
   );
+  $menu_items['扩展阅读'] = array(
+  	'管理扩展阅读',
+  	array(
+  		l('管理扩展阅读','node/add/readmore'),
+  	),
+  );
   return theme('teacher_task_list', $menu_items);
 }
 

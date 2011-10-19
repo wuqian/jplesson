@@ -185,10 +185,10 @@ function student_task_list() {
   $menu_items['扩展阅读'] = array(
   	'扩展阅读',
   	array(
-  		l('路由与交换','node/68'),
-  		l('计算机网络基础','node/67'),
-  		l('安全协议','node/69'),
-  		l('防火墙技术','node/70'),
+  		l('路由与交换','node/79'),
+  		l('计算机网络基础','node/80'),
+  		l('安全协议','node/81'),
+  		l('防火墙技术','node/82'),
   	),
   );
   global $base_url;
