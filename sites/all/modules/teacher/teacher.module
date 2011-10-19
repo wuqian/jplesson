@@ -1159,7 +1159,7 @@ function get_course_list() {
 	$type = 'ul';
 	$attributes = array('class' => 'course_list');
 	$items = array();
-	$result = db_query('SELECT tid, name, description FROM {term_data} ORDER BY weight');
+	$result = db_query('SELECT tid, name, description FROM {term_data} WHERE vid = 1 ORDER BY weight');
 	while ($term = db_fetch_object($result)) {
 
 		$item_ul['name'] = array(
