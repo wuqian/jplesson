@@ -787,6 +787,10 @@ ul.links li, ul.inline li {
   text-align: left; /* LTR */
 }
 
+.node div.links {
+  border-top:1px solid #cccccc;
+}
+
 .node .links ul.links li, .comment .links ul.links li {}
 .terms ul.links li {
   margin-left: 0;
