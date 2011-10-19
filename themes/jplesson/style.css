@@ -1413,3 +1413,11 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
 .admin-panel a:hover img {
 	background-color: #cccccc;
 }
+
+.lecture h2 {
+  background-color:#f3dbc8;
+  padding:5px;
+  color:#111111;
+}
+.lecture table {
+}
