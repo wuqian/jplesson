@@ -788,8 +788,13 @@ ul.links li, ul.inline li {
   text-align: left; /* LTR */
 }
 
-.node div.links {
-  border-top:1px solid #cccccc;
+.node .content {
+  padding-bottom:30px;
+  border-bottom:1px solid #cccccc;
+}
+
+.node .meta span{
+  height:30px;
 }
 
 .node .links ul.links li, .comment .links ul.links li {}
@@ -859,7 +864,7 @@ ul.links li, ul.inline li {
 }
 
 .node .content, .comment .content {
-  margin: 2em 0;
+  margin: 1.5em 0;
 }
 
 /**
@@ -1418,7 +1423,7 @@ table.system-status-report tr.ok, table.system-status-report tr.ok th {
   background-color:#f3dbc8;
   padding:5px;
   color:#111111;
-  margin-top:30px;
+  margin-top:20px;
 }
 .lecture table {
 }
