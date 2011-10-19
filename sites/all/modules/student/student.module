@@ -609,7 +609,7 @@ function student_cisco_bind_submit($form, &$form_state) {
 	return $form;
 }*/
  function student_examination_list(&$form_state){
-	$result = pager_query("SELECT * FROM {questionpaper}", 50, 0, NULL);
+	$result = pager_query("SELECT * FROM {questionpaper}", 20, 0, NULL);
 	
 	/*while($results = db_fetch_object($result)){
 		$form[][$i] = array(
@@ -637,7 +637,7 @@ function student_cisco_bind_submit($form, &$form_state) {
 	else if(isset($res)){
 		unset($form[$res->pid]['weight']);
 	}
-	$form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+	$form['pager'] = array('#value' => theme('pager', NULL, 20, 0));
 	return $form;
 }
 function student_examination_list_submit(){
@@ -690,7 +690,7 @@ function student_all(&$form_state, $op){
 		'#value' => $op,
 	);
 	for($j=0;$j<=count($resultarrs_key)-1;$j++){
-		$result = db_query("SELECT * FROM {questionpaper} INNER JOIN {teacher} ON teacher.id = '$resultarrs_key[$j]' AND questionpaper.pid=$op");
+		$result = db_query("SELECT * FROM {questionpaper} INNER JOIN {question} ON question.id = '$resultarrs_key[$j]' AND questionpaper.pid=$op");
 		while($data = db_fetch_object($result)){
 		$form[][$i] = array(
 			'#type' => 'item',

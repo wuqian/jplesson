@@ -145,15 +145,15 @@ function teacher_menu() {
 	);
 	$items['teacher/topic/choice'] = array(
 		'title' => t('生成试卷'),
-		'page callback' => 'drupal_get_form',
-		'page arguments' => array('teacher_all_options'),
+		'page callback' => 'teacher_options',
+		'page arguments' => array('list'),
 		'access arguments' => array('access teacher pages'),
 		'type' => MENU_CALLBACK,
 	);
 	$items['teacher/topic/paper'] = array(
 		'title' => '试卷列表',
-		'page callback' => 'drupal_get_form',
-		'page arguments' => array('teacher_question_list'),
+		'page callback' => 'teacher_question',
+		'page arguments' => array('list'),
 		'access arguments' => array('access teacher pages'),
 		'type' => MENU_CALLBACK,
 	);
@@ -582,7 +582,32 @@ function teacher_students_filters() {
   );
   return $filters;
 }
+/*
+ * Return class list twwo
+ * 
+ */
+function teacher_students_classes1() {
+	$classes = array();
+	$result = db_query('SELECT DISTINCT class FROM {users}');
+	while ($class = db_fetch_object($result)) {
+		$classes['所有'] = '所有';
+		$classes[$class->class] = $class->class;
+	}
+	return array_filter($classes);
+}
 
+function teacher_students_filters1() {
+  // Regular filters
+  $filters = array();
+  $classes = teacher_students_classes1();
+  $filters['class'] = array(
+    'title' => t('Class'),
+    'where' => "u.class = '%s'",
+    'join' => '',
+    'options' => $classes,
+  );
+  return $filters;
+}
 function teacher_students_build_filter_query() {
   $filters = teacher_students_filters();
 
@@ -1110,7 +1135,6 @@ function theme_teacher_admin_nodes($form) {
   $header[] = t('Operations');
   $output = '';
 
-  //$output .= drupal_render($form['options']);
   if ($has_posts) {
     foreach (element_children($form['title']) as $key) {
       $row = array();
@@ -1289,36 +1313,12 @@ function teacher_page_form_submit(&$form,&$form_state){
 /*
  * Examination questions library;
  */
-/*function teacher_all_options(&$form_state){
-	drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
-  $form = array();
-  $form = array(
-  	'#attributes' => array('class' => 'teacher-all-options')
-  );
-	$filters = teacher_students_filters();
-	$result = pager_query("SELECT * FROM {question}", 20, 0, NULL);
-	while($data = db_fetch_object($result)){
-		$form[$data->id] = array(
-			'#type' => 'checkbox',
-			'#default_value' => '',
-			'#title' => $data->id.'.'.$data->topic,
-		);		
-	}
-	foreach($filters as $key=>$filter){
-	$form['class_id'] = array(
-		'#title' => 'To class',
-		'#type' => 'select',
-		'#options' => $filter['options'],
-	);
-	}	
-	$form['submit'] = array(
-		'#type' => 'submit',
-		'#value' => '生成试卷',
-		'#submit' => array('teacher_all_submit'),
-	);
-	$form['pager'] = array('#value' => theme('pager', NULL, 20, 0));
-	return $form;
-}*/
+function teacher_options(){
+	
+	$output = drupal_get_form('teacher_choice_filter_form');
+	$output .= drupal_get_form('teacher_all_options');
+	return $output;
+}
 function teacher_all_options(&$form_state){
 	drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
   $form = array();
@@ -1326,35 +1326,39 @@ function teacher_all_options(&$form_state){
   	'#attributes' => array('class' => 'teacher-all-options')
   );
   
-  echo $type = $form_state['values']['0[filters][status][type]'];
-  if($type == NULL){
+  $type = $_SESSION['teacher_choice_filter'][0];
+  if($type == '所有'){
 		$result = pager_query("SELECT * FROM {question}", 20, 0, NULL);
   }
   else {
-  	$result = pager_query("SELECT * FROM {question} where questype = $type", 20, 0, NULL);
+  	$result = pager_query("SELECT * FROM {question} where question.questype = '$type'", 20, 0, NULL);
   }
-	while($term = db_fetch_object($result)){
-		$results[] = $term;
-	}
+	
 	$filters = teacher_students_filters();	
 	$filters1 = teacher_students_type_filters();
 	$form = array('#tree' => TRUE);
-	//过滤
-	$form[] = teacher_choice_filter_form();
-	foreach($filters as $key=>$filter){
-	$form['class_id'] = array(
-		'#title' => 'To class',
-		'#type' => 'select',
-		'#options' => $filter['options'],
+	//过滤	
+	$form['options'] = array(
+		'#type' => 'fieldset',
 	);
+	foreach($filters as $key=>$filter){
+		$form['options']['class_id'] = array(
+			'#title' => 'To class',
+			'#type' => 'select',
+			'#options' => $filter['options'],
+		);
 	}	
-	foreach($results as $res){
-		$form[$res->id]['#config'] = (array)$res;		
-		$form[$res->id]['id'] = array('#type' => 'checkbox','#title' => check_plain($res->id));
-		$form[$res->id]['topic'] = array('#value'=>check_plain($res->topic));
-		$form[$res->id]['type'] = array('#value'=>check_plain($res->questype));
+	while($term = db_fetch_object($result)){
+		$results[] = $term;
 	}
-	
+	if(!empty($results)) {
+		foreach($results as $res){
+			$form[$res->id]['#config'] = (array)$res;		
+			$form[$res->id]['id'] = array('#type' => 'checkbox','#title' => check_plain($res->id));
+			$form[$res->id]['topic'] = array('#value'=>check_plain($res->topic));
+			$form[$res->id]['type'] = array('#value'=>check_plain($res->questype));
+		}
+	}
 	$form['submit'] = array(
 		'#type' => 'submit',
 		'#value' => '生成试卷',
@@ -1375,13 +1379,14 @@ function teacher_all_options_submit(){
 	}
 }
 function theme_teacher_all_options($form){
+	$header = array(t('编号'),t('试题列表'),t('试题类型'));
 	$rows = array();
+	$output = drupal_render($form['options']);
 	foreach(element_children($form) as $key){
 		if(isset($form[$key]['id'])){
 			$vocabulary = &$form[$key];
 			
 			$row = array();
-			//$row[] = drupal_render($vocabulary['checkbox']);
 			$row[] = drupal_render($vocabulary['id']);
 			$row[] = drupal_render($vocabulary['topic']);
 			$row[] = drupal_render($vocabulary['type']);
@@ -1394,13 +1399,10 @@ function theme_teacher_all_options($form){
 	}
 	if(empty($rows)){
 		$rows = array(array('data'=>t('No vocalable'),'colspan'=>2));
-	}	
-	$header = array(t('编号'),t('试题列表'),t('试题类型'));
-//	if(isset($form['submit'])){
-//		$header[] = t('Weight');
-//		drupal_add_tabledrag('taxonomy','order','sibling','vocabulary-weight');
-//	}
-	return theme('table',$header,$rows,array('id'=>'teacher-options-list')).drupal_render($form);
+	}
+	
+	$output .= theme('table',$header,$rows,array('id'=>'teacher-options-list')).drupal_render($form);
+	return $output;	
 }
 /*
  * Submit multiple choice;
@@ -1412,7 +1414,6 @@ function teacher_all_submit(&$form,&$form_state){
 	for($i=$h;$i<=$e;$i++){
 		if($_POST[$i]){
 		$result = db_result(db_query("select id from {question} where id=$i"));
-		//$result1 = db_result(db_query("select option_a from {question} where id=$i"));
 		$correct = db_result(db_query("select correct from {question} where id=$i"));
 		$resultarr[$result] = $correct;
 		$resultarrs = serialize($resultarr);
@@ -1422,41 +1423,43 @@ function teacher_all_submit(&$form,&$form_state){
 							values ('%s','%s')",$form_state['values']['class_id'],$resultarrs);
 }
 /*
+ * teacher question
+ */
+function teacher_question(){
+	$output = drupal_get_form('teacher_topic_filter_form');
+	$output .= drupal_get_form('teacher_question_list');
+	return $output;
+}
+/*
  * Teacher List
  */
-/*function teacher_question_list(&$form_state){
-	$h = db_result(db_query("select id from {question} limit 0,1"));
-	$e = db_result(db_query("select id from {question} order by id desc limit 0,1"));
-	for($i=$h;$i<=$e;$i++){
-		if($pid = db_result(db_query("select pid from {questionpaper} where pid=$i"))){
-			$class = db_result(db_query("select class_id from {questionpaper} where pid=$i"));
-		$form[][$i] = array(
-			'#type' => 'item',
-			'#value' => l(t('The examination paper of'.' '.$pid.' '.'to class'.' '.$class),"teacher/topic/paper/".$pid),
-		);
-		}
-	}
-	return $form;
-}*/
 function teacher_question_list(&$form_state){
-	$result = pager_query("SELECT * FROM {questionpaper}", 50, 0, NULL);
+	$class = $_SESSION['teacher_topic_filter'][0];
+	if($class == '所有'){
+		$result = pager_query("SELECT * FROM {questionpaper}", 20, 0, NULL);
+	}
+	else {
+		$result = pager_query("SELECT * FROM {questionpaper} where class_id = '$class'", 20, 0, NULL);
+	}
 	while($term = db_fetch_object($result)){
 		$results[] = $term;
 	}
 	$form = array('#tree' => TRUE);
-	foreach($results as $res){
-		$form[$res->pid]['#config'] = (array)$res;
-		$form[$res->pid]['pid'] = array('#value'=>'The examination paper of'.' '.check_plain($res->pid));
-		$form[$res->pid]['class_id'] = array('#value'=>check_plain($res->class_id));
-		$form[$res->pid]['check'] = array('#value'=>l(t('查看'),"teacher/topic/paper/".check_plain($res->pid)));
-	} 
+	if(!empty($results)) {
+		foreach($results as $res){
+			$form[$res->pid]['#config'] = (array)$res;
+			$form[$res->pid]['pid'] = array('#value'=>'The examination paper of'.' '.check_plain($res->pid),'#weight'=>100);
+			$form[$res->pid]['class_id'] = array('#value'=>check_plain($res->class_id));
+			$form[$res->pid]['check'] = array('#value'=>l(t('查看'),"teacher/topic/paper/".check_plain($res->pid)));
+		} 
+	}
 	if(count($res)>1){
 		$form['submit'] = array('#type'=>'submit','#value' => t('save'));
 		}
 	else if(isset($res)){
 		unset($form[$res->pid]['weight']);
 	}
-	$form['pager'] = array('#value' => theme('pager', null, 50, 0));
+	$form['pager'] = array('#value' => theme('pager', null, 20, 0));
 	return $form;
 }
 function teacher_question_list_submit(){
@@ -1504,16 +1507,16 @@ function teacher_question_list_all(&$form_state, $op){
 	for($j=0;$j<=count($resultarrs_key)-1;$j++){
 		$result = db_query("SELECT * FROM {questionpaper} INNER JOIN {question} ON question.id = '$resultarrs_key[$j]' AND questionpaper.pid=$op");
 		while($data = db_fetch_object($result)){
-		$form[][$i] = array(
-			'#type' => 'item',
-			'#title' => $i.'.'.$data->topic,
-		);
+			$form[][$i] = array(
+				'#type' => 'item',
+				'#title' => $i.'.'.$data->topic,
+			);
 		$arr = unserialize($data->option_a);
 		for($k=0;$k<count($arr);$k++){
-		$form[][$i] = array(
-			'#type' => 'item',
-			'#value' => $arr[$k],
-		);
+			$form[][$i] = array(
+				'#type' => 'item',
+				'#value' => $arr[$k],
+			);
 		}
 		$i++;	
 	}
@@ -1527,7 +1530,6 @@ function teacher_overview_vocabularies(&$form_state, $op){
 	}
 	$form = array('#tree' => TRUE);
 	$j=1;
-	
 	foreach($results as $res){
 		$form[$res->id]['#config'] = (array)$res;
 		$form[$res->id]['id'] = array('#value'=>check_plain($j));
@@ -1537,7 +1539,6 @@ function teacher_overview_vocabularies(&$form_state, $op){
 		$opt = unserialize($op);
 		$option="";
 		for($i=1;$i<=count($opt);$i++){
-			//$opts .= $opt[$i].',';
 			switch($opt[$i]){
 				case 0:
 					$opts = 'A';
@@ -1608,7 +1609,9 @@ function teacher_students_type() {
 	$types = array();
 	$result = db_query("SELECT DISTINCT title from {node} where type = 'lesson'");
 		while($type = db_fetch_object($result)){
+			$types['未分类'] = '未分类';
 			$types[$type->title] = $type->title;
+			
 		}
 		return array_filter($types);
 }
@@ -1623,14 +1626,36 @@ function teacher_students_type_filters(){
 	);
 	return $filters;
 }
+function teacher_students_type1() {
+	$types = array();
+	$result = db_query("SELECT DISTINCT title from {node} where type = 'lesson'");
+		while($type = db_fetch_object($result)){
+			$types['所有'] = '所有';
+			$types['未分类'] = '未分类';
+			$types[$type->title] = $type->title;
+			
+		}
+		return array_filter($types);
+}
+function teacher_students_type_filters1(){
+	$filters = array();
+	$types = teacher_students_type1();
+	$filters['type'] = array(
+		'title' => t('Type'),
+		'where' => "u.type = '%s'",
+		'join' => '',
+		'options' => $types,
+	);
+	return $filters;
+}
 
 function teacher_choice_filter_form() {
 	$session = &$_SESSION['teacher_choice_filter'];
   $session = is_array($session) ? $session : array();
-  $filters = teacher_students_type_filters();
+  $filters = teacher_students_type_filters1();
   $form['filters'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Show only users where'),
+    '#title' => t('只显示指定试题类型'),
     '#theme' => 'teacher_students_filter',
   );
   
@@ -1639,14 +1664,15 @@ function teacher_choice_filter_form() {
     $form['filters']['status'][$key] = array(
       '#type' => 'select',
       '#options' => $filter['options'],
+    	'#default_value' => $_SESSION['teacher_choice_filter'][0],
     );
   }
 
-  $form['filters']['filter'] = array(
-    '#type' => 'radios',
-    '#options' => $names,
-  	'#default_value' => "class",
-  );
+//  $form['filters']['filter'] = array(
+//    '#type' => 'radios',
+//    '#options' => $names,
+//  	'#default_value' => "class",
+//  );
   
   $form['filters']['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -1654,19 +1680,50 @@ function teacher_choice_filter_form() {
   	'#submit' => array('teacher_choice_filter_form_submit')
   );
 
-  //drupal_add_js('misc/form.js', 'core');
+  drupal_add_js('misc/form.js', 'core');
 
   return $form;
 }
 function teacher_choice_filter_form_submit($form, &$form_state) {
-  $filters = teacher_students_type_filters();
-  if (isset($form_state['values']['filter'])) {
-     $filter = $form_state['values']['filter'];
-     // Merge an array of arrays into one if necessary.
-     $options = $filters[$filter]['options'];
-     if (isset($options[$form_state['values'][$filter]])) {
-       $_SESSION['teacher_choice_filter'][0] = array($filter, $form_state['values'][$filter]);
-     }
-  } 
+	$_SESSION['teacher_choice_filter'][0] = $form_state['values']['type'];
   return;
+}
+function teacher_topic_filter_form() {
+	$session = &$_SESSION['teacher_topic_filter'];
+  $session = is_array($session) ? $session : array();
+  $filters = teacher_students_filters1();
+  $form['filters'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('只显示指定班级的试卷'),
+    '#theme' => 'teacher_students_filter',
+  );
+  
+  foreach ($filters as $key => $filter) {
+    $names[$key] = $filter['title'];
+    $form['filters']['status'][$key] = array(
+      '#type' => 'select',
+      '#options' => $filter['options'],
+    	'#default_value' => $_SESSION['teacher_topic_filter'][0],
+    );
+  }
+
+//  $form['filters']['filter'] = array(
+//    '#type' => 'radios',
+//    '#options' => $names,
+//  	'#default_value' => "class",
+//  );
+  
+  $form['filters']['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Show'),
+  	'#submit' => array('teacher_topic_filter_form_submit')
+  );
+
+  drupal_add_js('misc/form.js', 'core');
+
+  return $form;
+}
+function teacher_topic_filter_form_submit($form,$form_state){
+	$_SESSION['teacher_topic_filter'][0] = $form_state['values']['class'];
+	return;
 }

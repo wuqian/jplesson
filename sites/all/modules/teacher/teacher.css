@@ -29,12 +29,9 @@
   float:left;
   width:200px;
 }
-#edit-class-id-wrapper label {
+#edit-options-class-id-wrapper label {
 	float:left;
 }
 #edit-type-wrapper label {
 	float:left;
-}
-#edit-type-wrapper {
-	margin-left:50px;
 }
