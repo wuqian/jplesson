@@ -195,7 +195,8 @@ function student_task_list() {
   $menu_items['常用链接'] = array(
   	'常用链接',
   	array(
-  		l('<img src="' . $base_url . '/misc/free1.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
+  		l('<img src="' . $base_url . '/misc/free1_router.png"></img>', 'http://cisclab1.bjut.edu.cn', array('html' => TRUE)),
+      l('<img src="' . $base_url . '/misc/free1_switch.png"></img>', 'http://cisclab2.bjut.edu.cn', array('html' => TRUE)),
   		l('<img src="' . $base_url . '/misc/cisco.png"></img>', 'http://www.cisco.com/web/learning/netacad/index.html', array('html' => TRUE)),
   	),
   );
