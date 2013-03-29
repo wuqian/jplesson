@@ -1277,41 +1277,7 @@ function add_text_question_validate(&$form,&$form_state){
     form_set_error('topic','The topic can not be empty');
   }
 }
-function add_option_question_validate(&$form,&$form_state){
-	if($form_state['values']['topic'] == ''){
-		form_set_error('topic','The topic can not be empty');
-	}
-	else if($form_state['values']['option_A'] == ''){
-		form_set_error('topic','The option can not be empty');
-	}
-	else if($form_state['values']['option_B'] == ''){
-		form_set_error('topic','The option can not be empty');
-	}
-	else if($form_state['values']['option_C'] == ''){
-		form_set_error('topic','The option can not be empty');
-	}
-	else if($form_state['values']['option_D'] == ''){
-		form_set_error('topic','The option can not be empty');
-	}
-}
 
-function add_option_question_submit(&$form,&$form_state){
-	$a = $form_state['values']['option_A'];
-	$b = $form_state['values']['option_B'];
-	$c = $form_state['values']['option_C'];
-	$d = $form_state['values']['option_D'];
-	$teachersubject = array($a,$b,$c,$d);
-	$con = serialize($teachersubject);
-	$type = $_POST['type'];
-	db_query("INSERT INTO {question} (id,topic,option_a,correct,questype,type)
-					 VALUES(null,'%s','%s','%d','%s','%s')",$form_state['values']['topic'],$con,$_POST[radios],$type,'option');
-	if(db_last_insert_id('question', 'id')){
-		drupal_set_message('Successful input');
-	}
-	else {
-		drupal_set_message('Input failure','error');
-	}
-}
 /*
  * Examination questions library;
  */
@@ -1607,27 +1573,7 @@ if (isset($form['submit'])) {
 	return theme('table',$header,$rows,array('id'=>'myteacher')).drupal_render($form);
 	
 }
-function teacher_students_type() {
-	$types = array();
-	$result = db_query("SELECT DISTINCT title from {node} where type = 'lesson'");
-		while($type = db_fetch_object($result)){
-			$types['未分类'] = '未分类';
-			$types[$type->title] = $type->title;
-			
-		}
-		return array_filter($types);
-}
-function teacher_students_type_filters(){
-	$filters = array();
-	$types = teacher_students_type();
-	$filters['type'] = array(
-		'title' => t('Type'),
-		'where' => "u.type = '%s'",
-		'join' => '',
-		'options' => $types,
-	);
-	return $filters;
-}
+
 function teacher_students_type1() {
 	$types = array();
 	$result = db_query("SELECT DISTINCT title from {node} where type = 'lesson'");
