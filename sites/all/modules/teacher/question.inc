@@ -172,14 +172,62 @@ function topic_remove($id) {
   drupal_goto("teacher/topic/manage");
 }
 
+
+/**
+ * 选择题试题录入
+ */
 function teacher_add_option_question(&$form_state){
   drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
+  drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
+  
   $form = array(
     '#attributes' => array('class' => 'teacher-form'),
   );
-  $filters = teacher_students_type_filters();
+
+  //课程选项
+  $filter = teacher_students_type_filters();
+  $courses = $filter['type']['options'];
+  $form['course'] = array(
+      '#title' => '课程',
+      '#type' => 'select',
+      '#options' => $courses,
+  );
+
+  //查找每个课程的章节列表
+  $form['chapter'] = array(
+    '#title' => '章节',
+    '#type' => 'fieldset',
+    '#attributes' => array('id' => 'chapters'),
+  );
+  foreach ($courses as $key => $course) {
+    $chapters = get_chapters($course);
+    $form['chapter'][$course] = array(
+        '#id'=>$course,
+        '#type' => 'select',
+        '#attributes' => array('style' => 'display:none;'),
+        '#options' => $chapters,
+    );
+  }
+
+  //score
+  $form['score'] = array(
+    '#title' => '分值',
+    '#type' => 'textfield',
+    '#required' => true,
+    '#default' => '',
+  );
+
+  //level
+  $form['level'] = array(
+    '#title' => '难度等级',
+    '#type' => 'select',
+    '#options' => array(1,2,3,4),
+    '#required' => true,
+    '#default' => '',
+  );
+
   $form['topic'] = array(
-    '#title' => 'Topic',
+    '#title' => '题目',
     '#type' => 'textarea',
     '#required' => true,
     '#default' => '',
@@ -192,36 +240,30 @@ function teacher_add_option_question(&$form_state){
   );
   
   $form['option_A'] = array(
-    '#title' => 'optins A',
+    '#title' => '选择 A',
     '#type' => 'textfield',
     '#required' => true,
     '#default' => '',
   );
   $form['option_B'] = array(
-    '#title' => 'Option B',
+    '#title' => '选择 B',
     '#type' => 'textfield',
     '#required' => true,
     '#default' => '',
   );
   $form['option_C'] = array(
-    '#title' => 'Option C',
+    '#title' => '选择 C',
     '#type' => 'textfield',
     '#required' => true,
     '#default' => '',
   );
   $form['option_D'] = array(
-    '#title' => 'Option D',
+    '#title' => '选择 D',
     '#type' => 'textfield',
     '#required' => true,
     '#default' => '',
   );
-  foreach($filters as $key=>$filter){
-    $form['type'] = array(
-      '#title' => 'Type',
-      '#type' => 'select',
-      '#options' => $filter['options'],
-    );
-  }
+
  
   $form['#validate'] = array('add_option_question_validate');
   $form['submit'] = array(
@@ -230,4 +272,62 @@ function teacher_add_option_question(&$form_state){
     '#submit' => array('add_option_question_submit'),
   );
   return $form;
+}
+
+function add_option_question_validate(&$form,&$form_state){
+  if($form_state['values']['topic'] == ''){
+    form_set_error('topic','The topic can not be empty');
+  }
+  else if($form_state['values']['option_A'] == ''){
+    form_set_error('topic','The option can not be empty');
+  }
+  else if($form_state['values']['option_B'] == ''){
+    form_set_error('topic','The option can not be empty');
+  }
+  else if($form_state['values']['option_C'] == ''){
+    form_set_error('topic','The option can not be empty');
+  }
+  else if($form_state['values']['option_D'] == ''){
+    form_set_error('topic','The option can not be empty');
+  }
+}
+
+function add_option_question_submit(&$form,&$form_state){
+  $a = $form_state['values']['option_A'];
+  $b = $form_state['values']['option_B'];
+  $c = $form_state['values']['option_C'];
+  $d = $form_state['values']['option_D'];
+  $teachersubject = array($a,$b,$c,$d);
+  $con = serialize($teachersubject);
+  $type = $_POST['type'];
+  db_query("INSERT INTO {question} (id,topic,option_a,correct,questype,type)
+           VALUES(null,'%s','%s','%d','%s','%s')",$form_state['values']['topic'],$con,$_POST[radios],$type,'option');
+  if(db_last_insert_id('question', 'id')){
+    drupal_set_message('Successful input');
+  }
+  else {
+    drupal_set_message('Input failure','error');
+  }
+}
+
+function teacher_students_type() {
+  $types = array();
+  $result = db_query("SELECT DISTINCT title from {node} where type = 'lesson'");
+    while($type = db_fetch_object($result)){
+      $types['未分类'] = '未分类';
+      $types[$type->title] = $type->title;
+      
+    }
+    return array_filter($types);
+}
+function teacher_students_type_filters(){
+  $filters = array();
+  $types = teacher_students_type();
+  $filters['type'] = array(
+    'title' => t('Type'),
+    'where' => "u.type = '%s'",
+    'join' => '',
+    'options' => $types,
+  );
+  return $filters;
 }
