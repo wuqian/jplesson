@@ -153,12 +153,19 @@ function teacher_menu() {
     $items['teacher/topic/add/text']=array(
       'title' => t('问答题录入'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('teacher_add_text_question'),
+      'page arguments' => array('teacher_text_question_form'),
+      'access arguments' => array('access teacher pages'),
+      'type' => MENU_CALLBACK,
+    );
+    $items['teacher/topic/edit/%']=array(
+      'title' => t('编辑题目'),
+      'page callback' => 'topic_edit',
+      'page arguments' => array(3),
       'access arguments' => array('access teacher pages'),
       'type' => MENU_CALLBACK,
     );
     $items['teacher/topic/remove/%']=array(
-      'title' => t('问答题录入'),
+      'title' => t('删除题目'),
       'page callback' => 'topic_remove',
       'page arguments' => array(3),
       'access arguments' => array('access teacher pages'),
@@ -1247,23 +1254,7 @@ function get_course_list() {
  * New module;
  */
 
-function topic_filters(){
-  $filters = array();
-  $types = teacher_students_type1();
-  $filters['topic_type'] = array(
-    'options' => array(
-      // "所有"=>"所有",
-      "option"=>"选择题",
-      "text"=>"问答题")
-  );
-  $filters['topic_class'] = array(
-    'title' => t('Type'),
-    'where' => "u.type = '%s'",
-    'join' => '',
-    'options' => $types,
-  );
-  return $filters;
-}
+
 
 
 function topic_filter_form_submit(&$form,&$form_state){
