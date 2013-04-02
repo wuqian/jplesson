@@ -98,15 +98,21 @@ function topic_filter_form(){
     return $form;
 }
 
-function teacher_text_question_form(&$form_state,$question_id){
+function teacher_text_question_form(&$form_state,$question){
     drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
     
-    if ($question_id) {
-        $form['question_id'] = $question_id;
-    }
+    krumo::dump($question);
 
     $form = array(
-        '#attributes' => array('class' => 'teacher-form'),
+        '#attributes' => array(
+            '#title' => 'Topic',
+            'type' => 'textfield',
+            ),
+    );    
+
+    $form['id'] = array(
+        '#type' => 'value',
+        '#value' => $question->id
     );
 
     //输入问答题-试题
@@ -114,9 +120,10 @@ function teacher_text_question_form(&$form_state,$question_id){
         '#title' => 'Topic',
         '#type' => 'textarea',
         '#required' => true,
-        '#default' => '',
+        '#default_value' => $question->topic,
     );
 
+    //krumo::dump($question->course);
     //课程选项
     $filter = teacher_students_type_filters();
     $courses = $filter['type']['options'];
@@ -124,6 +131,7 @@ function teacher_text_question_form(&$form_state,$question_id){
         '#title' => '课程',
         '#type' => 'select',
         '#options' => $courses,
+        '#default_value' => $question->course,
     );
 
     //查找每个课程的章节列表
@@ -132,6 +140,7 @@ function teacher_text_question_form(&$form_state,$question_id){
         '#type' => 'fieldset',
         '#attributes' => array('id' => 'chapters'),
     );
+
     foreach ($courses as $key => $course) {
         $chapters = get_chapters($course);
         $form['chapter'][$course] = array(
@@ -139,6 +148,7 @@ function teacher_text_question_form(&$form_state,$question_id){
             '#type' => 'select',
             '#attributes' => array('style' => 'display:none;'),
             '#options' => $chapters,
+            '#default_value' => $question->chapter,
         );
     }
 
@@ -146,6 +156,7 @@ function teacher_text_question_form(&$form_state,$question_id){
     $form['score'] = array(
         '#title' => '分值',
         '#type' => 'textfield',
+        '#value' => $question->score
     );
 
     //level
@@ -153,15 +164,20 @@ function teacher_text_question_form(&$form_state,$question_id){
         '#title' => '难度等级',
         '#type' => 'select',
         '#options' => array(1,2,3,4),
+        '#default_value' => $question->level,
     );
 
     //表单验证函数
     $form['#validate'] = array('add_text_question_validate');
 
         
-    if ($form['question_id']){
+    if ($question){
         //已有question调用update接口
-        
+        $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => 'submit',
+            '#submit' => array('update_text_question_submit'),
+        );
     }else{
         //新增question调用add接口
         $form['submit'] = array(
@@ -192,10 +208,12 @@ function update_text_question_submit(&$form,&$form_state){
     $chapter = $_POST[$course];
     $score =  $_POST['score'];
     $level = $_POST['level'];
-    $id = $_POST['question_id'];
+    $id = $form_state['values']['id'];
+
     //UPDATE 表名称 SET 列名称 = 新值 WHERE 列名称 = 某值
     //Ex: UPDATE Person SET Address = 'Zhongshan 23', City = 'Nanjing' WHERE LastName = 'Wilson'
-    db_query("UPDATE {question} SET topic = '%s', option_a = '%s', correct = '%d', 
+    krumo::dump($id);
+    db_query("UPDATE question SET topic = '%s', option_a = '%s', correct = '%d', 
             course = '%s', type = '%s', chapter = '%s', score = %d, level = %d where id = %d",
             $form_state['values']['topic'], 
             '', 
@@ -214,6 +232,7 @@ function update_text_question_submit(&$form,&$form_state){
         drupal_set_message('Input failure','error');
     }
 }
+
 function add_text_question_submit(&$form,&$form_state){
     $course = $_POST['course'];
     $chapter = $_POST[$course];
@@ -240,16 +259,20 @@ function topic_remove($id) {
 //试题编辑
 function topic_edit($id) {
     krumo::dump($id);
-
     //从数据库获取 question 对象
-    $result = db_query('SELECT * FROM {question} where id = %d',intval($score));
+    $result = db_query('SELECT * FROM question WHERE id = %d', intval($id));
 
-    krumo::dump($result);
+    $question;
+    while ($q= db_fetch_object($result)) {
+        $question = $q;
+    }
+
     //根据 question 对象类型 (问答题:text/选择题:option),进行不同的页面跳转
     if ($result->type == "text") {
         //跳转至问答题页面
         //todo:将result的结果传递给 teacher_text_question_form 
-        $output = drupal_get_form('teacher_text_question_form');
+        krumo::dump($question);
+        $output = drupal_get_form('teacher_text_question_form',$question);
         
     } elseif ($result->type == "option") {
         //跳转至选择题页面
