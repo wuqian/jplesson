@@ -771,7 +771,6 @@ function student_all_submit(&$form,&$form_state){
     }
 
     //将答案序列化存入数据库中
-
     db_query("INSERT INTO {answer} (id,answers,student_id,questionpaper_id,stat,score)
             VALUES(null,'%s',%d, %d, %d, %d)",
             serialize($answers),

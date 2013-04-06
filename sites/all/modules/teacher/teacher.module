@@ -1104,7 +1104,9 @@ function teacher_question_list_all(&$form_state, $op){
 	$questions = unserialize($questions);
 
 	//从数据库中获取question的详细信息
+    
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
+    $index = 1;
     while($question = db_fetch_object($result)){
         //为题目创建form:(区分选择题＆问答题)
         if ($question->type == 'text') {
@@ -1112,14 +1114,14 @@ function teacher_question_list_all(&$form_state, $op){
             krumo::dump("text");
             $form[][$question->id] = array(
                 '#type' => 'textarea',
-                '#title' => $i.'.'.$question->topic,
+                '#title' => $index .'.'.$question->topic,
             );
         } elseif ($question->type == 'option') {
             //选择题
             $form[][$question->id] = array(
                 '#type' => 'item',
                 //'#default_value' => '1',
-                '#title' => $i.'.'.$question->topic,
+                '#title' => $index .'.'.$question->topic,
             );
             $arr = unserialize($question->option_a);
             $form[][$question->id] = array(
@@ -1129,11 +1131,12 @@ function teacher_question_list_all(&$form_state, $op){
         } else {
             krumo::dump("error");
         }
-
+        $index ++;
     }
 
 	return $form;
 }
+
 function teacher_overview_vocabularies(&$form_state, $op){
 	$result = pager_query("SELECT * FROM {subject} WHERE pid=$op", 50, 0, NULL);
 	while($term = db_fetch_object($result)){
