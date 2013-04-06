@@ -14,7 +14,7 @@ function teacher_add_auto_questionpaper(&$form_state)
     );
 
 //输入试卷标题
-  $form['topic'] = array(
+  $form['title'] = array(
     '#title' => '标题',
     '#type' => 'textfield',
     '#required' => true,
@@ -80,27 +80,36 @@ function teacher_add_auto_questionpaper(&$form_state)
     '#value' => '生成',
     '#submit' => array('teacher_add_auto_questionpaper_submit'),
     );
-
   return $form; 
+
 }
 
 function teacher_add_auto_questionpaper_submit(&$form,&$form_state){
+
   krumo::dump($form_state);
-  // $a = $form_state['values']['option_A'];
-  // $b = $form_state['values']['option_B'];
-  // $c = $form_state['values']['option_C'];
-  // $d = $form_state['values']['option_D'];
-  // $teachersubject = array($a,$b,$c,$d);
-  // $con = serialize($teachersubject);
-  // $type = $_POST['type'];
-  // db_query("INSERT INTO {question} (id,topic,option_a,correct,questype,type)
-  //          VALUES(null,'%s','%s','%d','%s','%s')",$form_state['values']['topic'],$con,$_POST[radios],$type,'option');
-  // if(db_last_insert_id('question', 'id')){
-  //   drupal_set_message('Successful input');
-  // }
-  // else {
-  //   drupal_set_message('Input failure','error');
-  // }
+  $paperParams = array();
+  $paperParams['course'] = $form_state['values']['course'];
+  $paperParams['chapters'] = $form_state['values'][$paperParams['course']];
+  $paperParams['totalScore'] = $form_state['values']['score'];
+
+  $paper = generateQuestionPaper($paperParams);
+  krumo::dump($paper);
+
+  if ($paper == FALSE) {
+    drupal_set_message('试题数量不足','error');
+    return;
+  }
+  //试卷插入数据库
+  $paper = serialize($paper);
+  db_query("INSERT INTO {questionpaper} (title,class_id,questions)
+            VALUES('%s','%s','%s')", $form_state['values']['title'], $form_state['values']['class_id'], $paper);
+
+  if(db_last_insert_id('questionpaper', 'pid')){
+    drupal_set_message('试卷生成成功!');
+  }
+  else {
+    drupal_set_message('试卷生成失败, 请重试。','error');
+  }
 }
 
 function teacher_add_auto_questionpaper_validate(&$form,&$form_state) {
@@ -134,4 +143,49 @@ function getCoursesOptionList()
 
   }
   return $options;
+}
+
+
+/**
+ * 自动生成试卷
+ * @param  string $params [description]
+ * @return array  $paper  [description]
+ *         FALSE  试题数量不足               
+ */
+function generateQuestionPaper($params)
+{
+  $chapterQuery = array();
+  foreach ($params['chapters'] as $chapter => $selected) {
+    if ($selected) {
+      $chapterQuery[] = $chapter;
+    }
+  }
+  $chapterQuery = implode(",", $chapterQuery);
+
+  $result = db_query('SELECT * FROM {question} WHERE course = "%s" AND chapter IN (%s)', $params['course'], $chapterQuery);
+
+  //取得指定课程章节所有试题
+  $questions = array();
+  while($question = db_fetch_object($result)) {
+    $questions[] = $question;
+  }
+  //打乱顺序
+  shuffle($questions);
+
+  $paper = array();
+  $totalScore = $params['totalScore'];
+  $currentScore = 0;
+
+  while($currentScore < $totalScore) {
+    if(!count($questions)) break;
+    $questionPop = array_pop($questions);
+    $paper[] = $questionPop->id;
+    $currentScore += $questionPop->score;
+  }
+
+  if ($currentScore < $totalScore) {
+    return FALSE; //试题数量不足总分
+  }
+
+  return $paper;
 }
