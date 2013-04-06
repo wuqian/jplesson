@@ -200,6 +200,13 @@ function teacher_menu() {
       'page arguments' => array('teacher_add_auto_questionpaper'),
       'type' => MENU_NORMAL_ITEM,
     );
+    $items['teacher/question/import'] = array(
+      'title' => '批量导入试题',
+      'access arguments' => array('access teacher pages'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('import_questions'),
+      'type' => MENU_NORMAL_ITEM,
+    );
     $items['teacher/topic/paper/%/list'] = array(
         'title' => '试题',
         'access arguments' => array('The teacher input'),

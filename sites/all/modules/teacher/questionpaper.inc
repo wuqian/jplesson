@@ -64,6 +64,7 @@ function teacher_add_auto_questionpaper(&$form_state)
   $form['score'] = array(
     '#title' => '总分值',
     '#type' => 'textfield',
+    '#required' => true,
     );
 
 //level
@@ -86,14 +87,12 @@ function teacher_add_auto_questionpaper(&$form_state)
 
 function teacher_add_auto_questionpaper_submit(&$form,&$form_state){
 
-  krumo::dump($form_state);
   $paperParams = array();
   $paperParams['course'] = $form_state['values']['course'];
   $paperParams['chapters'] = $form_state['values'][$paperParams['course']];
   $paperParams['totalScore'] = $form_state['values']['score'];
 
   $paper = generateQuestionPaper($paperParams);
-  krumo::dump($paper);
 
   if ($paper == FALSE) {
     drupal_set_message('试题数量不足','error');
