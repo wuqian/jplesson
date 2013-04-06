@@ -684,38 +684,46 @@ function theme_student_examination_list($form){
  */
 function student_all(&$form_state, $questionpaper_id){
 	$form = array();
+
+    $form['questionpaper_id'] = array(
+        '#type' => 'value',
+        '#value' => $questionpaper_id
+    );
+
 	$questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$questionpaper_id"));
 	$questions = unserialize($questions);
 
+    
     //从数据库中获取question的详细信息
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
+    $index = 1;
     while($question = db_fetch_object($result)){
         //为题目创建form:(区分选择题＆问答题)
         if ($question->type == 'text') {
             //问答题
-            krumo::dump("text");
-            $form[][$question->id] = array(
+            //krumo::dump("text");
+            $form[$question->id][$question->id] = array(
                 '#type' => 'textarea',
-                '#title' => $i.'.'.$question->topic,
+                '#title' => $index.'.'.$question->topic,
             );
         } elseif ($question->type == 'option') {
             //选择题
-            $form[][$question->id] = array(
+            $form[$question->id][$question->id.'topic'] = array(
                 '#type' => 'item',
                 //'#default_value' => '1',
-                '#title' => $i.'.'.$question->topic,
+                '#title' => $index.'.'.$question->topic,
             );
             $arr = unserialize($question->option_a);
-            $form[][$question->id] = array(
+            $form[$question->id][$question->id] = array(
                 '#type' => 'radios',
                 '#options' => $arr,
             );
         } else {
             krumo::dump("error");
         }
-
+        $index ++;
     }
-
+    //krumo::dump($form);
 	$form['#validate'] = array('student_all_validate');
 	$form['submit'] = array(
 		'#type' => 'submit',
@@ -731,42 +739,65 @@ function student_all(&$form_state, $questionpaper_id){
  * 
  */
 function student_all_validate(&$form,&$form_state){
-	$i=1;
-	$op = $form_state['values']['pid'];
+	// $i=1;
+	// $op = $form_state['values']['pid'];
 	
-	$resultarr = db_result(db_query("select options from {questionpaper} where pid=$op"));
-	$resultarrs = unserialize($resultarr);
-	//Access key
-	//$resultarrs_key = array_keys($resultarrs);
-	
-	$results_values = array_values($resultarrs);
-	for($i=0;$i<count($results_values);$i++){
-	$subject_maxdisp = $results_values[$i];
-	if($subject_maxdisp != $_POST[$i+1]){
-		form_set_error('$i','Enter your answer is wrong,please input again');
-		}
-	}
+	// $resultarr = db_result(db_query("select options from {questionpaper} where pid=$op"));
+	// $resultarrs = unserialize($resultarr);
+
+ //    //$resultarrs_key = array_keys($resultarrs);
+	// $results_values = array_values($resultarrs);
+	// for($i=0;$i<count($results_values);$i++){
+	// $subject_maxdisp = $results_values[$i];
+	// if($subject_maxdisp != $_POST[$i+1]){
+	// 	form_set_error('$i','Enter your answer is wrong,please input again');
+	// 	}
+	// }
 }
 /*
  * Submit answers to subject data sheet;
  */
 function student_all_submit(&$form,&$form_state){
 	global $user;
-	$op = $form_state['values']['pid'];
-	
-	$i=1;
-	$corrects = array();
-	$resultarr = db_result(db_query("select options from {questionpaper} where pid=$op"));
-	$resultarrs = unserialize($resultarr);
-	
-	for($i=1;$i<=count($resultarrs);$i++){
-	$corrects[$i] = $_POST[$i];
-	}
-	$correctarr = serialize($corrects);
-	$subject_maxdisp = db_result(db_query("SELECT pid from {questionpaper} where pid = $op"));
-	db_query("INSERT INTO {answer} (id,pid,uid,optionx)
-						 VALUES(null,'%s','%s','%s')",$subject_maxdisp,
-						 $user->uid,$correctarr);
+	$questionpaper_id = $form_state['values']['questionpaper_id'];
+    $questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$questionpaper_id"));
+    $questions = unserialize($questions);
+	//krumo::dump($questionpaper_id);
+    //从表单中获取答题结果
+    $answers = array();
+    foreach ($questions as $question) {
+        $answers [$question] = $form_state['values'][$question];
+        //krumo::dump($form_state['values'][$question]);
+    }
+
+    //将答案序列化存入数据库中
+
+    db_query("INSERT INTO {answer} (id,answers,student_id,questionpaper_id,stat,score)
+            VALUES(null,'%s',%d, %d, %d, %d)",
+            serialize($answers),
+            $user->id,
+            $questionpaper_id,
+            0,
+            0);
+    $answer_id = db_last_insert_id('answer','id');
+    //触发自动化判卷
+    //找到题目列表中的选择题,读取选择题答案,答案一致则加该题目的分值
+    $score = 0;
+    $result = db_query('SELECT * FROM {question} WHERE id IN (%s)',implode(",", $questions));
+    krumo::dump(implode(",", $questions)); 
+    while($question = db_fetch_object($result)){
+        if ($question->type != 'option') {
+            continue;
+        }
+        $question_id = $question->id;
+        if ($answers [$question->id] == $question->correct) {
+            $score += $question->score;
+        }
+    }
+
+    //更新数据库score & stat
+    db_query("UPDATE answer SET score = '%d', stat = 1 where id = %d",$score,$answer_id);
+
 	if(db_last_insert_id('answer','id')){
 		drupal_set_message('Successfull input');
 		
