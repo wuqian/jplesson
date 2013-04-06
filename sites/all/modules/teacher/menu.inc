@@ -186,13 +186,7 @@ function teacher_menu() {
         'type' => MENU_CALLBACK,
     );
 
-    $items['teacher/topic/paper/%'] = array(
-        'title' => '试卷信息',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('teacher_question_list_all', 3),
-        'access arguments' => array('access teacher pages'),
-        'type' => MENU_NORMAL_ITEM,
-    );
+    
     $items['teacher/questionpaper/add/auto'] = array(
       'title' => '自动生成试卷',
       'access arguments' => array('access teacher pages'),
@@ -207,17 +201,25 @@ function teacher_menu() {
       'page arguments' => array('import_questions'),
       'type' => MENU_NORMAL_ITEM,
     );
+
+    $items['teacher/topic/paper/%'] = array(
+        'title' => '试卷信息',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('teacher_question_list_all', 3),
+        'access arguments' => array('access teacher pages'),
+        'type' => MENU_NORMAL_ITEM,
+    );
     $items['teacher/topic/paper/%/list'] = array(
-        'title' => '试题',
-        'access arguments' => array('The teacher input'),
+        'title' => '试题内容',
+        'access arguments' => array('access teacher pages'),
         'type' => MENU_DEFAULT_LOCAL_TASK,
         'weight' => 0,
     );
     $items['teacher/topic/paper/%/answer'] = array(
-        'title' => '答题信息',
+        'title' => '试卷批改',
         'access arguments' => array('access teacher pages'),
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('teacher_overview_vocabularies', 3),
+        'page arguments' => array('questionpaper_answer_list', 3),
         'type' => MENU_LOCAL_TASK,
         'weight' => 1,
     );

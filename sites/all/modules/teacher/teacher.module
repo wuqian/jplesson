@@ -43,7 +43,7 @@ function teacher_theme() {
     'teacher_admin_nodes' => array(
       'arguments' => array('form' => NULL),
     ),
-    'teacher_overview_vocabularies' => array(
+    'questionpaper_answer_list' => array(
 			'arguments' => array('form' => array()),
 		),
 		'teacher_question_list' => array(
@@ -1105,11 +1105,12 @@ function teacher_question_list_all(&$form_state, $op){
 
 	//从数据库中获取question的详细信息
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
+
+    $i = 1;
     while($question = db_fetch_object($result)){
         //为题目创建form:(区分选择题＆问答题)
         if ($question->type == 'text') {
             //问答题
-            krumo::dump("text");
             $form[][$question->id] = array(
                 '#type' => 'textarea',
                 '#title' => $i.'.'.$question->topic,
@@ -1129,92 +1130,10 @@ function teacher_question_list_all(&$form_state, $op){
         } else {
             krumo::dump("error");
         }
-
+        $i += 1;
     }
 
 	return $form;
-}
-function teacher_overview_vocabularies(&$form_state, $op){
-	$result = pager_query("SELECT * FROM {subject} WHERE pid=$op", 50, 0, NULL);
-	while($term = db_fetch_object($result)){
-		$results[] = $term;
-	}
-	$form = array('#tree' => TRUE);
-	$j=1;
-	foreach($results as $res){
-		$form[$res->id]['#config'] = (array)$res;
-		$form[$res->id]['id'] = array('#value'=>check_plain($j));
-		$form[$res->id]['uid'] = array('#value'=>check_plain($res->uid));
-		$form[$res->id]['pid'] = array('#value'=>check_plain($res->pid));
-		$op = $res->optionx;
-		$opt = unserialize($op);
-		$option="";
-		for($i=1;$i<=count($opt);$i++){
-			switch($opt[$i]){
-				case 0:
-					$opts = 'A';
-					break;
-				case 1:
-					$opts = 'B';
-					break;
-				case 2:
-					$opts = 'C';
-					break;
-				case 3:
-					$opts = 'D';
-					break;
-			}
-			$option .= $opts.',';
-		}
-		$j++;
-		$form[$res->id]['optionx'] = array('#value' => check_plain($option));
-	}
-	if(count($res)>1){
-		$form['submit'] = array('#type'=>'submit','#value' => t('save'));
-	}
-	else if(isset($res)){
-		unset($form[$res->id]['weight']);
-	}
-	$form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
-	return $form;
-}
-function teacher_overview_vocabularies_submit(){
-	foreach($form_state['values'] as $id => $vocabulary){
-		if(is_numeric($id) && $form[$id]['#vocabulary']['weight'] != $form_state['values'][$id]['weight']){
-			$form[$id]['#vocabulary']['weight'] = $form_state['values'][$id]['weight'];
-			taxonomy_save_vocabulary($form[$id]['#vocabulary']);
-		}
-	}
-}
-function theme_teacher_overview_vocabularies($form){
-	$rows = array();
-	foreach(element_children($form) as $key){
-		if(isset($form[$key]['id'])){
-			$vocabulary = &$form[$key];
-			
-			$row = array();
-			$row[] = drupal_render($vocabulary['id']);
-			$row[] = drupal_render($vocabulary['uid']);
-			$row[] = drupal_render($vocabulary['pid']);
-			$row[] = drupal_render($vocabulary['optionx']);
-			if(isset($vocabulary['weight'])){
-				$vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';
-        $row[] = drupal_render($vocabulary['weight']);
-			}
-			$rows[] = array('data' => $row,'class'=>'teacher');
-		}
-		
-	}
-	if(empty($rows)){
-		$rows = array(array('data' => t('No vocalable'),'colspan'=>2));
-	}
-	$header = array(t('id'),t('学号'),t('试卷编号'),t('答案'));
-if (isset($form['submit'])) {
-    $header[] = t('Weight');
-    drupal_add_tabledrag('taxonomy', 'order', 'sibling', 'vocabulary-weight');
-  }
-	return theme('table',$header,$rows,array('id'=>'myteacher')).drupal_render($form);
-	
 }
 
 function teacher_students_type1() {
@@ -1307,3 +1226,4 @@ function teacher_topic_filter_form_submit($form,$form_state){
 	$_SESSION['teacher_topic_filter'][0] = $form_state['values']['class'];
 	return;
 }
+

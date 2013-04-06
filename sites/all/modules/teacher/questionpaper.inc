@@ -204,8 +204,6 @@ function teacher_all_options(&$form_state){
     //试题科目
     $course = $_SESSION['teacher_choice_filter'][0];
 
-    krumo::dump($type);
-
     if($course == '所有'){
         $result = pager_query("SELECT * FROM {question}", 20, 0, NULL);
     }
@@ -304,7 +302,6 @@ function theme_teacher_all_options($form){
 function teacher_questionpaper_submit(&$form,&$form_state){
     $class_id = $form_state['values']['options']['class_id'];
     $title = $form_state['values']['options']['title'];
-    krumo::dump($class_id);
 
     $h = db_result(db_query("select id from {question} limit 0,1"));
     $e = db_result(db_query("select id from {question} order by id desc limit 0,1"));
@@ -392,4 +389,53 @@ function theme_teacher_question_paper_list($form){
     }
 
     return theme('table',$header,$rows,array('id'=>'teacher-list')).drupal_render($form);
+}
+
+/**
+ * 试卷批改列表页
+ */
+function questionpaper_answer_list(&$form_state, $questionpaper_id){
+  krumo::dump('12312');
+  $result = pager_query("SELECT * FROM {answer} WHERE questionpaper_id=$questionpaper_id", 50, 0, NULL);
+  while($term = db_fetch_object($result)){
+    $results[] = $term;
+  }
+  $form = array('#tree' => TRUE);
+  $j=1;
+  foreach($results as $res){
+    $form[$res->id]['student_id'] = array('#value'=>check_plain($res->student_id));
+    $form[$res->id]['stat'] = array('#value'=>check_plain($res->stat));
+    $form[$res->id]['score'] = array('#value'=>check_plain($res->score));
+    $form[$res->id]['operation'] = array('#value' => l(t('批改'), "answer/review"));
+    $j += 1;
+  }
+  $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  return $form;
+}
+
+function questionpaper_answer_list_submit(){
+
+}
+
+function theme_questionpaper_answer_list($form){
+  $rows = array();
+  foreach(element_children($form) as $key){
+    if(isset($form[$key]['id'])){
+      $vocabulary = &$form[$key];
+      
+      $row = array();
+      $row[] = drupal_render($vocabulary['student_id']);
+      $row[] = drupal_render($vocabulary['stat']);
+      $row[] = drupal_render($vocabulary['score']);
+      $row[] = drupal_render($vocabulary['operation']);
+      $rows[] = array('data' => $row,'class'=>'teacher');
+    }
+    
+  }
+  if(empty($rows)){
+    $rows = array(array('data' => t('没有提交记录'),'colspan'=>2));
+  }
+  $header = array(t('学号'),t('批改状态'),t('得分'),t('操作'));
+  return theme('table',$header,$rows,array('id'=>'myteacher')).drupal_render($form);
+  
 }
