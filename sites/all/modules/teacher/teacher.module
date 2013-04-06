@@ -10,6 +10,7 @@ module_load_include('inc', 'node', 'node.pages');
 module_load_include('inc', 'taxonomy', 'taxonomy.admin');
 require_once('menu.inc');
 require_once('question.inc');
+require_once('questionpaper.inc');
 
 function teacher_perm() {
 	return array('access teacher pages');
@@ -96,8 +97,10 @@ function teacher_task_list() {
   	array(
       l('试题管理','teacher/question/manage'),
   		//l('添加题目','teacher/topic/add'),
-  		l('生成自测试卷','teacher/question/choice'),
-  		l('查看试卷和提交记录','teacher/question/paper'),
+  		l('手动生成试卷','teacher/topic/choice'),
+      l('自动生成试卷','teacher/questionpaper/add/auto'),
+  		l('查看试卷和提交记录','teacher/topic/paper'),
+
   	),
   );
   $menu_items['师生互动'] = array(
