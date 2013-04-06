@@ -99,6 +99,7 @@ function teacher_task_list() {
   	'管理学生自测题库',
   	array(
       l('试题管理','teacher/question/manage'),
+      l('批量导入试题库', 'teacher/question/import'),
   		//l('添加题目','teacher/topic/add'),
   		l('手动生成试卷','teacher/topic/choice'),
       l('自动生成试卷','teacher/questionpaper/add/auto'),
