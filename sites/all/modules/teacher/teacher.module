@@ -24,6 +24,9 @@ function teacher_theme() {
 	    'teacher_students_account_list' => array(
 	      'arguments' => array('form' => NULL),
     ),
+      'teacher_question_paper_list' => array(
+        'arguments' => array('form' => NULL),
+    ),
     'teacher_students_filter' => array(
       'arguments' => array('form' => NULL),
     ),
