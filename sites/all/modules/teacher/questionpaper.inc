@@ -144,8 +144,6 @@ function getCoursesOptionList()
   }
   return $options;
 }
-
-
 /**
  * 自动生成试卷
  * @param  string $params [description]
@@ -188,4 +186,14 @@ function generateQuestionPaper($params)
   }
 
   return $paper;
+}
+
+//
+//试卷管理系统
+//
+function teacher_add_manually_questionpaper()
+{
+    $output = drupal_get_form('teacher_choice_filter_form');
+    $output .= drupal_get_form('teacher_all_options');
+    return $output;
 }

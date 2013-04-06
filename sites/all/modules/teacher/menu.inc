@@ -136,20 +136,19 @@ function teacher_menu() {
     );
     //试题录入
     $items['teacher/question/add/option']=array(
-      'title' => t('选择题录入'),
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('teacher_option_question_form'),
-      'access arguments' => array('access teacher pages'),
-      'type' => MENU_CALLBACK,
+        'title' => t('选择题录入'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('teacher_option_question_form'),
+        'access arguments' => array('access teacher pages'),
+        'type' => MENU_CALLBACK,
     );
     $items['teacher/question/add/text']=array(
-      'title' => t('问答题录入'),
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('teacher_text_question_form'),
-      'access arguments' => array('access teacher pages'),
-      'type' => MENU_CALLBACK,
+        'title' => t('问答题录入'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('teacher_text_question_form'),
+        'access arguments' => array('access teacher pages'),
+        'type' => MENU_CALLBACK,
     );
-
     //试题编辑
     $items['teacher/question/edit/%']=array(
       'title' => t('编辑题目'),
@@ -167,11 +166,11 @@ function teacher_menu() {
       'type' => MENU_CALLBACK,
     );
 
-    //试卷管理
-     $items['teacher/topic/choice'] = array(
+    //试卷管理-
+    //手工添加试卷
+    $items['teacher/questionpaper/add/manually'] = array(
         'title' => t('生成试卷'),
-        'page callback' => 'teacher_options',
-        'page arguments' => array('list'),
+        'page callback' => 'teacher_add_manually_questionpaper',
         'access arguments' => array('access teacher pages'),
         'type' => MENU_CALLBACK,
     );

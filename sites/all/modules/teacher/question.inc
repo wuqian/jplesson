@@ -155,63 +155,6 @@ function teacher_question_filter_form() {
 
     return $form;
 }
-// function topic_show_list_form(){
-//     drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
-//     $form = array(
-//         '#attributes' => array('class' => 'teacher-all-options')
-//     );
-//     $topic_type = $_SESSION['topic_type'];
-//     $topic_class = $_SESSION['topic_class'];
-//     //krumo::dump($topic_type);
-//     //krumo::dump($topic_class);
-//     //topic_type:  选择题/问答题
-//     //topic_class: 课程
-//     if($topic_type == '所有'){
-//         if ($topic_class == '所有') {
-//             //所有科目的所有题目
-//             $result = pager_query("SELECT * FROM {question} ", 20, 0, NULL);
-//         } else {
-//             //特定科目的所有题目
-//             $result = pager_query("SELECT * FROM {question} where question.course = '$topic_class'", 20, 0, NULL);
-//         }
-        
-//     }else {
-//         if ($topic_class == '所有') {
-//             //所有科目的特定题目
-//             $result = pager_query("SELECT * FROM {question} where question.type = '$topic_type'", 20, 0, NULL);
-//         } else {
-//             //特定科目的特定题目
-//             $result = pager_query("SELECT * FROM {question} where question.course = '$topic_class' and question.type = '$topic_type'", 20, 0, NULL);
-//         }   
-        
-//     }
-//     while($term = db_fetch_object($result)){
-//         $results[] = $term;
-//     }
-
-//     if(!empty($results)) {
-//         foreach($results as $res){
-//             $form[$res->id]['#config'] = (array)$res;   
-            
-//             $form[$res->id]['id'] = array('#type' => 'checkbox','#title' => check_plain($res->id));
-
-//             $form[$res->id]['topic'] = array('#value'=>check_plain($res->topic));
-            
-//             $form[$res->id]['course'] = array('#value'=>check_plain($res->course));
-
-//             if ($res->type == 'text') {
-//                 $form[$res->id]['type'] = array('#value'=>check_plain('问答题'));
-//             } elseif ($res->type == 'option') {
-//                 $form[$res->id]['type'] = array('#value'=>check_plain('选择题'));
-//             }
-            
-//             $form[$res->id]['edit'] = array('#value'=>l("编辑",'teacher/topic/edit/'.$res->id));
-//             $form[$res->id]['del'] = array('#value'=>l("删除",'teacher/topic/remove/'.$res->id));
-//         }
-//     }
-
-//     return $form;
-// }
 
 function topic_filters(){
     $filters = array();
@@ -590,24 +533,6 @@ function add_option_question_validate(&$form,&$form_state){
         form_set_error('topic','The option can not be empty');
     }
 }
-
-// function add_option_question_submit(&$form,&$form_state){
-//   $a = $form_state['values']['option_A'];
-//   $b = $form_state['values']['option_B'];
-//   $c = $form_state['values']['option_C'];
-//   $d = $form_state['values']['option_D'];
-//   $teachersubject = array($a,$b,$c,$d);
-//   $con = serialize($teachersubject);
-//   $type = $_POST['type'];
-//   db_query("INSERT INTO {question} (id,topic,option_a,correct,questype,type)
-//    VALUES(null,'%s','%s','%d','%s','%s')",$form_state['values']['topic'],$con,$_POST[radios],$type,'option');
-//   if(db_last_insert_id('question', 'id')){
-//     drupal_set_message('Successful input');
-// }
-// else {
-//     drupal_set_message('Input failure','error');
-// }
-// }
 
 function teacher_students_type() {
   $types = array();
