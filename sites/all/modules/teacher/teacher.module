@@ -9,7 +9,7 @@
 module_load_include('inc', 'node', 'node.pages');
 module_load_include('inc', 'taxonomy', 'taxonomy.admin');
 require_once('question.inc');
-require_once('testpaper.inc');
+require_once('questionpaper.inc');
 /**
  * Implementation of hook_menu().
  */
@@ -187,11 +187,11 @@ function teacher_menu() {
 		'access arguments' => array('access teacher pages'),
 		'type' => MENU_NORMAL_ITEM,
 	);
-  $items['teacher/testpaper/add/auto'] = array(
+  $items['teacher/questionpaper/add/auto'] = array(
     'title' => '自动生成试卷',
     'access arguments' => array('access teacher pages'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('teacher_add_auto_test_paper'),
+    'page arguments' => array('teacher_add_auto_questionpaper'),
     'type' => MENU_NORMAL_ITEM,
   );
 	$items['teacher/topic/paper/%/list'] = array(
@@ -299,7 +299,7 @@ function teacher_task_list() {
       l('试题管理','teacher/topic/manage'),
   		//l('添加题目','teacher/topic/add'),
   		l('手动生成试卷','teacher/topic/choice'),
-      l('自动生成试卷','teacher/testpaper/add/auto'),
+      l('自动生成试卷','teacher/questionpaper/add/auto'),
   		l('查看试卷和提交记录','teacher/topic/paper'),
   	),
   );
