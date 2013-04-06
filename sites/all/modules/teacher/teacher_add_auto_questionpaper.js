@@ -1,5 +1,4 @@
 $(document).ready(function(){
-
     $('#chapters .chapter').hide();
     var currentCourse = $('#edit-course').val();
     $('#' + currentCourse + '-wrapper').show();

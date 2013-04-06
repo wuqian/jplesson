@@ -138,7 +138,7 @@ function teacher_menu() {
     $items['teacher/question/add/option']=array(
       'title' => t('选择题录入'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('teacher_add_option_question'),
+      'page arguments' => array('teacher_option_question_form'),
       'access arguments' => array('access teacher pages'),
       'type' => MENU_CALLBACK,
     );
