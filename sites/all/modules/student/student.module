@@ -611,7 +611,9 @@ function student_cisco_bind_submit($form, &$form_state) {
 	return $form;
 }*/
  function student_examination_list(&$form_state){
-	$result = pager_query("SELECT * FROM {questionpaper}", 20, 0, NULL);
+  global $user;
+  $class = $user->class;
+	$result = pager_query("SELECT * FROM {questionpaper} WHERE class_id = '$class'", 20, 0, NULL);
 	
 	/*while($results = db_fetch_object($result)){
 		$form[][$i] = array(
@@ -680,42 +682,50 @@ function theme_student_examination_list($form){
 /*
  * Generating examination paper;
  */
-function student_all(&$form_state, $op){
+function student_all(&$form_state, $questionpaper_id){
 	$form = array();
-	$resultarr = db_result(db_query("SELECT options FROM {questionpaper} WHERE pid=$op"));
-	$resultarrs = unserialize($resultarr);
-	//Access key
-	$resultarrs_key = array_keys($resultarrs);
-	$i=1;
-	$form['pid'] = array(
-		'#type' => 'hidden',
-		'#value' => $op,
-	);
-	for($j=0;$j<=count($resultarrs_key)-1;$j++){
-		$result = db_query("SELECT * FROM {questionpaper} INNER JOIN {question} ON question.id = '$resultarrs_key[$j]' AND questionpaper.pid=$op");
-		while($data = db_fetch_object($result)){
-		$form[][$i] = array(
-			'#type' => 'item',
-			//'#default_value' => '1',
-			'#title' => $i.'.'.$data->topic,
-		);
-		$arr = unserialize($data->option_a);
-		$form[][$i] = array(
-			'#type' => 'radios',
-			'#options' => $arr,
-		);
-		$i++;
-	}
-	}
-	$form['#validate'] = array('subject_all_validate');
+	$questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$questionpaper_id"));
+	$questions = unserialize($questions);
+
+    //从数据库中获取question的详细信息
+    $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
+    while($question = db_fetch_object($result)){
+        //为题目创建form:(区分选择题＆问答题)
+        if ($question->type == 'text') {
+            //问答题
+            krumo::dump("text");
+            $form[][$question->id] = array(
+                '#type' => 'textarea',
+                '#title' => $i.'.'.$question->topic,
+            );
+        } elseif ($question->type == 'option') {
+            //选择题
+            $form[][$question->id] = array(
+                '#type' => 'item',
+                //'#default_value' => '1',
+                '#title' => $i.'.'.$question->topic,
+            );
+            $arr = unserialize($question->option_a);
+            $form[][$question->id] = array(
+                '#type' => 'radios',
+                '#options' => $arr,
+            );
+        } else {
+            krumo::dump("error");
+        }
+
+    }
+
+	$form['#validate'] = array('student_all_validate');
 	$form['submit'] = array(
 		'#type' => 'submit',
 		'#value' => '提交',
-		'#submit' => array('subject_all_submit'),
+		'#submit' => array('student_all_submit'),
 	);
 	
 	return $form;
 }
+
 /*
  * Students submit answer validate;
  * 

@@ -188,12 +188,209 @@ function generateQuestionPaper($params)
   return $paper;
 }
 
-//
-//试卷管理系统
-//
 function teacher_add_manually_questionpaper()
 {
     $output = drupal_get_form('teacher_choice_filter_form');
     $output .= drupal_get_form('teacher_all_options');
     return $output;
+}
+
+function teacher_all_options(&$form_state){
+    drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
+    $form = array();
+    $form = array(
+        '#attributes' => array('class' => 'teacher-all-options')
+    );
+  
+    //试题科目
+    $course = $_SESSION['teacher_choice_filter'][0];
+
+    krumo::dump($type);
+
+    if($course == '所有'){
+        $result = pager_query("SELECT * FROM {question}", 20, 0, NULL);
+    }
+    else {
+        $result = pager_query("SELECT * FROM {question} where course = '".$course."'", 20, 0, NULL);
+    }
+    
+    $filters = teacher_students_filters();  
+    $filters1 = teacher_students_type_filters();
+    $form = array('#tree' => TRUE);
+    //过滤
+    
+    $form['options'] = array(
+        '#type' => 'fieldset',
+    );
+
+    foreach($filters as $key=>$filter){
+        $form['options']['class_id'] = array(
+            '#title' => 'To class',
+            '#type' => 'select',
+            '#options' => $filter['options'],
+        );
+    }  
+
+    $form['options']['title'] = array(
+            '#title' => '试卷名称',
+            '#type' => 'textfield',
+    ); 
+
+    while($term = db_fetch_object($result)){
+        $results[] = $term;
+    }
+    if(!empty($results)) {
+        foreach($results as $res){
+            $form[$res->id]['#config'] = (array)$res;       
+            $form[$res->id]['id'] = array('#type' => 'checkbox','#title' => check_plain($res->id));
+            $form[$res->id]['topic'] = array('#value'=>check_plain($res->topic));
+            $form[$res->id]['type'] = array('#value'=>check_plain($res->type));
+            $form[$res->id]['score'] = array('#value'=>check_plain($res->score));
+            $form[$res->id]['level'] = array('#value'=>check_plain($res->level));
+        }
+    }
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => '生成试卷',
+        '#submit' => array('teacher_questionpaper_submit'),
+    );
+    
+    if(count($res)>1){
+        $form['submit'] = array('#type'=>'submit','#value' => t('save'));
+    }
+    $form['pager'] = array('#value' => theme('pager', null, 20, 0));
+    return $form;
+}
+
+function theme_teacher_all_options($form){
+    $header = array(t('编号'),t('试题列表'),t('试题类型'),t('分值'),t('难度'));
+
+    $rows = array();
+    $output = drupal_render($form['options']);
+    foreach(element_children($form) as $key){
+        if(isset($form[$key]['id'])){
+            $vocabulary = &$form[$key];
+            $row = array();
+            $row[] = drupal_render($vocabulary['id']);
+            $row[] = drupal_render($vocabulary['topic']);
+            if (drupal_render($vocabulary['type']) == text) {
+                $row[] = t('问答题');
+            }elseif (drupal_render($vocabulary['type']) == option) {
+                $row[] = t('选择题');
+            }
+
+            $row[] = drupal_render($vocabulary['score']);
+            $row[] = drupal_render($vocabulary['level']);
+
+
+            if(isset($vocabulary['weight'])){
+                $vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';
+                $row[] = drupal_render($vocabulary['weight']);
+            }
+            $rows[] = array('data'=>$row,'class'=>'teacher-options-list');
+        }
+    }
+    if(empty($rows)){
+        $rows = array(array('data'=>t('No vocalable'),'colspan'=>2));
+    }
+    
+    $output .= theme('table',$header,$rows,array('id'=>'teacher-options-list')).drupal_render($form);
+    return $output; 
+}
+
+/*
+ * 点击生成手工试卷
+ */
+function teacher_questionpaper_submit(&$form,&$form_state){
+    $class_id = $form_state['values']['options']['class_id'];
+    $title = $form_state['values']['options']['title'];
+    krumo::dump($class_id);
+
+    $h = db_result(db_query("select id from {question} limit 0,1"));
+    $e = db_result(db_query("select id from {question} order by id desc limit 0,1"));
+
+    //将题目id存入数组,序列化到questions字段中
+    $questions = array();
+    for($i=$h;$i<=$e;$i++){
+        if($_POST[$i]){
+            $questions [] = $i;
+        }
+    }
+
+    db_query("insert into {questionpaper} (class_id,questions,title)
+            values ('%s','%s','%s')",$class_id,serialize($questions),$title);
+}
+
+/*
+ * 试卷列表
+ */
+
+function teacher_questionpaper_manage()
+{
+    $output = drupal_get_form('teacher_topic_filter_form');
+    $output .= drupal_get_form('teacher_question_paper_list');
+    return $output;
+}
+
+function teacher_question_paper_list(&$form_state){
+    $class = $_SESSION['teacher_topic_filter'][0];
+    if($class == '所有'){
+        $result = pager_query("SELECT * FROM {questionpaper}", 20, 0, NULL);
+    }
+    else {
+        $result = pager_query("SELECT * FROM {questionpaper} where class_id = '$class'", 20, 0, NULL);
+    }
+    while($term = db_fetch_object($result)){
+        $results[] = $term;
+    }
+    $form = array('#tree' => TRUE);
+    if(!empty($results)) {
+        foreach($results as $res){
+            $form[$res->pid]['#config'] = (array)$res;
+            $form[$res->pid]['pid'] = array('#value'=>check_plain($res->pid));
+            $form[$res->pid]['title'] = array('#value'=>check_plain($res->title));
+            $form[$res->pid]['class_id'] = array('#value'=>check_plain($res->class_id));
+            $form[$res->pid]['check'] = array('#value'=>l(t('查看'),"teacher/topic/paper/".check_plain($res->pid)));
+        } 
+    }
+    if(count($res)>1){
+        $form['submit'] = array('#type'=>'submit','#value' => t('save'));
+        }
+    else if(isset($res)){
+        unset($form[$res->pid]['weight']);
+    }
+    $form['pager'] = array('#value' => theme('pager', null, 20, 0));
+    return $form;
+}
+
+function theme_teacher_question_paper_list($form){
+    $rows = array();
+    foreach(element_children($form) as $key){
+        if(isset($form[$key]['pid'])){
+            $vocabulary = &$form[$key];
+            
+            $row = array();
+            $row[] = drupal_render($vocabulary['pid']);
+            $row[] = drupal_render($vocabulary['title']);
+            $row[] = drupal_render($vocabulary['class_id']);
+            $row[] = drupal_render($vocabulary['check']);
+            if(isset($vocabulary['weight'])){
+                $vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';
+                $row[] = drupal_render($vocabulary['weight']);
+            }
+            $rows[] = array('data'=>$row,'class'=>'teacher-list');
+        }
+    }
+    if(empty($rows)){
+        $rows = array(array('data'=>t('No vocalable'),'colspan'=>2));
+    }
+
+    $header = array(t('试卷ID'),t('试卷名称'),t('班级'),t('编辑'));
+    if(isset($form['submit'])){
+        $header[] = t('Weight');
+        drupal_add_tabledrag('taxonomy','order','sibling','vocabulary-weight');
+    }
+
+    return theme('table',$header,$rows,array('id'=>'teacher-list')).drupal_render($form);
 }

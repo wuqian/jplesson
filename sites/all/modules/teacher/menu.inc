@@ -167,6 +167,7 @@ function teacher_menu() {
     );
 
     //试卷管理-
+
     //手工添加试卷
     $items['teacher/questionpaper/add/manually'] = array(
         'title' => t('生成试卷'),
@@ -174,13 +175,17 @@ function teacher_menu() {
         'access arguments' => array('access teacher pages'),
         'type' => MENU_CALLBACK,
     );
-    $items['teacher/topic/paper'] = array(
+
+    //试卷查询与删除
+    $items['teacher/questionpaper/manage'] = array(
         'title' => '试卷列表',
-        'page callback' => 'teacher_question_paper',
+        // 'page callback' => 'teacher_question_paper',
+        'page callback' => 'teacher_questionpaper_manage',
         'page arguments' => array('list'),
         'access arguments' => array('access teacher pages'),
         'type' => MENU_CALLBACK,
     );
+
     $items['teacher/topic/paper/%'] = array(
         'title' => '试卷信息',
         'page callback' => 'drupal_get_form',
