@@ -1114,7 +1114,7 @@ function teacher_question_list_all(&$form_state, $op){
         if ($question->type == 'text') {
             //问答题
             $form[][$question->id] = array(
-                '#type' => 'textarea',
+                '#type' => 'item',
                 '#title' => $index .'.'.$question->topic,
             );
         } elseif ($question->type == 'option') {
