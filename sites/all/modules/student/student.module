@@ -612,25 +612,48 @@ function student_cisco_bind_submit($form, &$form_state) {
 }*/
  function student_examination_list(&$form_state){
   global $user;
+  $student_id = $user->uid;
   $class = $user->class;
 	$result = pager_query("SELECT * FROM {questionpaper} WHERE class_id = '$class'", 20, 0, NULL);
 	
-	/*while($results = db_fetch_object($result)){
-		$form[][$i] = array(
-			'#type' => 'item',
-			'#value' => l(t('The examination paper of'.' '.$results->pid),"student/paper/list/".$results->pid),
-		);
-	}*/
 	while($term = db_fetch_object($result)){
 		$results[] = $term;
 	}
+    
 	$form = array('#tree' => TRUE);
 	if(!empty($results)) {
 		foreach($results as $res){
 			$form[$res->pid]['#config'] = (array)$res;
 			$form[$res->pid]['pid'] = array('#value' => 'examination paper of'.' '.check_plain($res->pid));
 			$form[$res->pid]['class_id'] = array('#value' => check_plain($res->class_id));
-			$form[$res->pid]['check'] = array('#value' => l(t('答题'),"student/paper/list/".$res->pid));
+
+            //根据questionpaper_id,student_id 查找答题记录
+            $questionpaper_id = $res->pid;
+            $answer_resutls = pager_query("SELECT * FROM {answer} WHERE student_id = $student_id AND questionpaper_id = $questionpaper_id", 20, 0, NULL);
+            $answer = NULL;
+            while($tmp = db_fetch_object($answer_resutls)){
+                $answer = $tmp;
+            }
+
+            if (!$answer != NULL) {
+                //如果answers(student_id,questionpaper_id)不存在,显示 答题
+                $form[$res->pid]['check'] = array('#value' => l(t('答题'),"student/paper/list/".$res->pid));
+            } elseif ($answer->stat == 1) {
+                //如果已经判卷未完成,显示　判卷中
+                $form[$res->pid]['check'] = array('#value' => check_plain('判卷中'));
+            } elseif ($answer->stat == 2) {
+                //如果已经判卷未完成,显示　已完成
+                $form[$res->pid]['check'] = array('#value' => check_plain('已完成'));
+            }
+
+            krumo::dump($answer);
+            //如果已经判卷完成,显示　考分查看结果
+            if ($answer != NULL && $answer->stat == 2) {
+                $form[$res->pid]['score'] = array('#value' => check_plain($answer->score));
+                krumo::dump($answer);
+            } else {
+                $form[$res->pid]['score'] = array('#value' => '');
+            }
 		}
 	} else {
 		$form['empty'] = array('#type' => 'markup', '#value' => "没有试卷");
@@ -662,6 +685,8 @@ function theme_student_examination_list($form){
 			$row[] = drupal_render($vocabulary['pid']);
 			$row[] = drupal_render($vocabulary['class_id']);
 			$row[] = drupal_render($vocabulary['check']);
+            $row[] = drupal_render($vocabulary['score']);
+
 			if(isset($vocabulary['weight'])){
 				$vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';
 				$row[] = drupal_render($vocabulary['weight']);
@@ -672,7 +697,7 @@ function theme_student_examination_list($form){
 	if(empty($rows)){
 		$rows = array(array('data' => t('No vocabulary'),'colspan' => 2));
 	}
-	$header = array(t('试卷列表'),t('班级'),t('编辑'));
+	$header = array(t('试卷列表'),t('班级'),t('编辑'),t('考分'));
 	if(isset($form['submit'])){
 		$header[] = t('weight');
 		drupal_add_tabledrag('taxonomy','order','sibling','vocabulary-weight'); 
@@ -774,7 +799,7 @@ function student_all_submit(&$form,&$form_state){
     db_query("INSERT INTO {answer} (id,answers,student_id,questionpaper_id,stat,score)
             VALUES(null,'%s',%d, %d, %d, %d)",
             serialize($answers),
-            $user->id,
+            $user->uid,
             $questionpaper_id,
             0,
             0);
