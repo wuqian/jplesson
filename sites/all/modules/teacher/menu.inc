@@ -216,12 +216,20 @@ function teacher_menu() {
         'weight' => 0,
     );
     $items['teacher/topic/paper/%/answer'] = array(
-        'title' => '试卷批改',
+        'title' => '试卷提交列表',
         'access arguments' => array('access teacher pages'),
         'page callback' => 'drupal_get_form',
         'page arguments' => array('questionpaper_answer_list', 3),
         'type' => MENU_LOCAL_TASK,
         'weight' => 1,
+    );
+
+    $items['teacher/questionpaper/%/correct'] = array(
+        'title' => '试卷批改',
+        'access arguments' => array('access teacher pages'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('questionpaper_answer_correct', 2),
+        'type' => MENU_CALLBACK,
     );
   return $items;
 }

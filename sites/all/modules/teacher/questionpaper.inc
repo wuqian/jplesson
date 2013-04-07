@@ -379,7 +379,7 @@ function theme_teacher_question_paper_list($form){
         }
     }
     if(empty($rows)){
-        $rows = array(array('data'=>t('No vocalable'),'colspan'=>2));
+        $rows = array(array('data'=>t('没有找到试卷'),'colspan'=>2));
     }
 
     $header = array(t('试卷ID'),t('试卷名称'),t('班级'),t('编辑'));
@@ -395,21 +395,36 @@ function theme_teacher_question_paper_list($form){
  * 试卷批改列表页
  */
 function questionpaper_answer_list(&$form_state, $questionpaper_id){
-  krumo::dump('12312');
-  $result = pager_query("SELECT * FROM {answer} WHERE questionpaper_id=$questionpaper_id", 50, 0, NULL);
+
+  $result = pager_query("SELECT a.*, u.name FROM {answer} a LEFT JOIN {users} u ON a.student_id = u.uid WHERE questionpaper_id=$questionpaper_id", 50, 0, NULL);
   while($term = db_fetch_object($result)){
     $results[] = $term;
   }
-  $form = array('#tree' => TRUE);
-  $j=1;
+
   foreach($results as $res){
-    $form[$res->id]['student_id'] = array('#value'=>check_plain($res->student_id));
-    $form[$res->id]['stat'] = array('#value'=>check_plain($res->stat));
-    $form[$res->id]['score'] = array('#value'=>check_plain($res->score));
-    $form[$res->id]['operation'] = array('#value' => l(t('批改'), "answer/review"));
-    $j += 1;
+    $form['#items'][$res->id]['student_id'] = array('#value'=>check_plain($res->student_id));
+    $form['#items'][$res->id]['name'] = array('#value'=>check_plain($res->name));
+    $form['#items'][$res->id]['stat'] = array('#value'=>check_plain($res->stat));
+    $form['#items'][$res->id]['score'] = array('#value'=>check_plain($res->score));
+    $op;
+    switch ($res->stat) {
+      case 0:
+      $op = array('#value' => t('等待自动批改'));
+        break;
+      case 1:
+      $op = array('#value' => l(t('批改'), "teacher/questionpaper/". $res->id ."/correct"));
+        break;
+      case 2:
+      $op = array('#value' => t('已批改'));
+        break;
+      default:
+        break;
+    }
+    $form['#items'][$res->id]['operation'] = $op;
   }
+
   $form['pager'] = array('#value' => theme('pager', NULL, 50, 0));
+  
   return $form;
 }
 
@@ -418,24 +433,142 @@ function questionpaper_answer_list_submit(){
 }
 
 function theme_questionpaper_answer_list($form){
+
   $rows = array();
-  foreach(element_children($form) as $key){
-    if(isset($form[$key]['id'])){
-      $vocabulary = &$form[$key];
-      
+
+  foreach(element_children($form['#items']) as $key){
+      $item = &$form['#items'][$key];
       $row = array();
-      $row[] = drupal_render($vocabulary['student_id']);
-      $row[] = drupal_render($vocabulary['stat']);
-      $row[] = drupal_render($vocabulary['score']);
-      $row[] = drupal_render($vocabulary['operation']);
-      $rows[] = array('data' => $row,'class'=>'teacher');
-    }
-    
+      $row[] = drupal_render($item['student_id']);
+      $row[] = drupal_render($item['name']);
+      $row[] = drupal_render($item['stat']);
+      $row[] = drupal_render($item['score']);
+      $row[] = drupal_render($item['operation']);
+      $rows[] = array('data' => $row);
   }
+
   if(empty($rows)){
     $rows = array(array('data' => t('没有提交记录'),'colspan'=>2));
   }
-  $header = array(t('学号'),t('批改状态'),t('得分'),t('操作'));
-  return theme('table',$header,$rows,array('id'=>'myteacher')).drupal_render($form);
+
+  $header = array(t('学号'),t('姓名'),t('批改状态'),t('得分'),t('操作'));
+
+
+  return theme('table',$header,$rows).drupal_render($form);
   
+}
+
+
+/**
+ * 试卷批改页
+ */
+
+function questionpaper_answer_correct(&$form_state, $questionpaper_id){
+  $form = array();
+    //获取问题列表
+  $query = db_query("SELECT a.*, q.* FROM {answer} a LEFT JOIN {questionpaper} q ON a.questionpaper_id = q.pid WHERE a.id = %d", $questionpaper_id);
+  $paperAnswered = db_fetch_object($query);  
+  $questions = unserialize($paperAnswered->questions);
+
+  //从数据库中获取question的详细信息
+  $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
+
+  $answer = unserialize($paperAnswered->answers);
+  $index = 1;
+  while($question = db_fetch_object($result)){
+        //为题目创建form:(区分选择题＆问答题)
+    if ($question->type == 'text') {
+            //问答题
+      $form[][$question->id]['question'] = array(
+        '#type' => 'item',
+        '#title' => $index .'.'.$question->topic,
+        );
+
+      if (empty($answer[$question->id])) {
+        $answer[$question->id] = '未填写答案';
+      }
+      $form[][$question->id]['answer'] = array(
+        '#type' => 'item',
+        '#value' => $answer[$question->id],
+        );
+      $form[][$question->id]['correct' . $question->id] = array(
+        '#type' => 'textfield',
+        '#field_prefix' => '得分: ',
+        '#size' => 10, 
+        '#required' => TRUE,
+        );
+    } elseif ($question->type == 'option') {
+
+      //选择题不进行批改
+
+
+      //       //选择题
+      // $form[][$question->id] = array(
+      //   '#type' => 'item',
+      //           //'#default_value' => '1',
+      //   '#title' => $index .'.'.$question->topic,
+      //   );
+      // $arr = unserialize($question->option_a);
+      // $form[][$question->id] = array(
+      //   '#type' => 'radios',
+      //   '#options' => $arr,
+      //   );
+    } else {
+      krumo::dump("error");
+    }
+    $index ++;
+
+  }
+
+  $form['baseScore'] = array(
+    '#type' => 'value',
+    '#value' => $paperAnswered->score,
+    );
+
+  $form['answerId'] = array(
+    '#type' => 'value',
+    '#value' => $paperAnswered->id,
+    );
+
+  $form['destination'] = array(
+    '#type' => 'hidden',
+    '#value' => 'teacher/topic/paper/'. $paperAnswered->pid . '/answer'
+    );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('提交'),
+    '#submit' => array('questionpaper_answer_correct_submit')
+    );
+
+  return $form;
+
+}
+
+
+function questionpaper_answer_correct_submit(&$form,&$form_state){
+
+  $scoreAdd = 0;
+  foreach ($form_state['values'] as $key => $value) {
+    $pattern = '/^correct.*/';
+    if(preg_match($pattern, $key)) {
+      $scoreAdd += intval($value);
+    }
+  }
+
+  $finalScore = $form_state['values']['baseScore'] + $scoreAdd;
+
+  $result = db_query("UPDATE answer SET score = %d, stat = %d where id = %d AND stat = 1",
+    intval($finalScore),
+    2,
+    intval($form_state['values']['answerId'])
+    );
+
+  if($result){
+    drupal_set_message('批改成功');
+    $form_state['redirect'] = $form_state['values']['destination'];
+  }else {
+    drupal_set_message('输入错误，请重试','error');
+  }
+
 }
