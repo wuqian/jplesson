@@ -198,7 +198,7 @@ function teacher_menu() {
       'title' => '批量导入试题',
       'access arguments' => array('access teacher pages'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('import_questions'),
+      'page arguments' => array('import_questions_form'),
       'type' => MENU_NORMAL_ITEM,
     );
 
