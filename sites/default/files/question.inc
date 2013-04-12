@@ -573,8 +573,8 @@ function import_questions_form() {
     '#default_value' => 'text',
     '#options' => array(
       'text' => t('问答题'), 
-      'option' => t('单选题'), 
-      'multiple_option' => t('多选题'),
+      'choice' => t('单选题'), 
+      'multiple_choice' => t('多选题'),
       'true_false' => t('判断题'),
       ),
     );
@@ -606,207 +606,36 @@ function import_questions_form_submit($form, &$form_state) {
   $dest = file_directory_path() . '/upload';
   $file = file_save_upload('upload', array('file_validate_extensions' => array('xls')), $dest);
   if(!$file) {
-    drupal_set_message('导入失败，请检查文件格式', 'error');
+    drupal_set_message(t('导入失败，请检查文件格式'), 'error');
     return;
   }
-  
-  //检查文件是否可以按表格读取
-  $data = null;
-  try {
-    $data = new Spreadsheet_Excel_Reader($file->filepath, false, 'UTF-8');
-  } catch (Exception $e) {
-    drupal_set_message('导入失败，请检查文件格式', 'error');
-    return;
-  }
-
-  //按类型导入试题
-  $result = null;
-  switch ($data->val(1, 1)) {
-    case 'option':
-      $result = import_question_type_option($data);
-      break;
-    case 'multiple_option':
-      $result = import_question_type_multiple_option($data);
-      break;
-    case 'true_false':
-      $result = import_question_type_true_false($data);
-      break;
-    case 'text':
-      $result = import_question_type_text($data);
-      break;
-    default:
-      drupal_set_message('导入失败，请检查数据格式', 'error');
-      return;
-      break;
-  }
-
-  drupal_set_message('成功导入'. $result['success'] . '条试题！');
-  if($fail > 0) {
-    drupal_set_message($result['fail'] . '条试题导入失败，请检查数据格式！', 'error');
-  }
-  return;
-
-}
-
-/**
- * 导入单选题
- */
-function import_question_type_option($data) {
+  $data = new Spreadsheet_Excel_Reader($file->filepath, false, 'UTF-8');
   $rowcount = $data->rowcount();
-  $row = 3;
+  $row = 2;
   $success = 0;
   $fail = 0;
   while($row <= $rowcount) {
-    $topic = $data->val($row, 3);
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
-    $score =  2;
-    $level = $data->val($row, 9);
-    $correct = $data->val($row, 8);
+    $topic = $data->val($row, 4);
+    $course = $data->val($row, 2);
+    $chapter = $data->val($row, 3);
+    $score =  $data->val($row, 10);
+    $level = $data->val($row, 11);
+    $correct = $data->val($row, 9);
 
     //序列化数组
-    $a = $data->val($row, 4);
-    $b = $data->val($row, 5);
-    $c = $data->val($row, 6);
-    $d = $data->val($row, 7);
+    $a = $data->val($row, 5);
+    $b = $data->val($row, 6);
+    $c = $data->val($row, 7);
+    $d = $data->val($row, 8);
     $teachersubject = array($a,$b,$c,$d);
     $con = serialize($teachersubject);
 
-    //问题类型:
-    $type = 'option';
-
-    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d')",
-      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level));
-
-    if(db_last_insert_id('question', 'id')) {
-      $success += 1;
-    }
-    else {
-      $fail += 1;
-    }
-    $row += 1;
-  }
-
-  $result = array(
-    'success' => $success,
-    'fail' => $fail,
-    );
-  return $result;
-}
-
-/**
- * 导入多选题
- */
-function import_question_type_multiple_option($data) {
-  $rowcount = $data->rowcount();
-  $row = 3;
-  $success = 0;
-  $fail = 0;
-  while($row <= $rowcount) {
-    $topic = $data->val($row, 3);
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
-    $score =  4;
-    $level = $data->val($row, 13);
-    $correct = $data->val($row, 12);
-
-    //序列化数组
-    $a = $data->val($row, 4);
-    $b = $data->val($row, 5);
-    $c = $data->val($row, 6);
-    $d = $data->val($row, 7);
-    $e = $data->val($row, 8);
-    $f = $data->val($row, 9);
-    $g = $data->val($row, 10);
-    $h = $data->val($row, 11);
-    $teachersubject = array($a, $b, $c, $d, $e, $f, $g, $h);
-    $con = serialize($teachersubject);
-
-    //问题类型
-    $type = 'multiple_option';
-
-    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d')",
-      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level));
-
-    if(db_last_insert_id('question', 'id')) {
-      $success += 1;
-    }
-    else {
-      $fail += 1;
-    }
-    $row += 1;
-  }
-
-  $result = array(
-    'success' => $success,
-    'fail' => $fail,
-    );
-  return $result;
-}
-
-/**
- * 导入判断题
- */
-function import_question_type_true_false($data) {
-  $rowcount = $data->rowcount();
-  $row = 3;
-  $success = 0;
-  $fail = 0;
-  while($row <= $rowcount) {
-    $topic = $data->val($row, 3);
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
-    $score =  2;
-    $level = $data->val($row, 5);
-    $correct = $data->val($row, 4);
-
-    //问题类型
-    $type = 'true_false';
-
-    db_query("INSERT INTO {question} (id,topic,correct,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%s','%d','%d')",
-      $topic,$correct,$course,$type,$chapter,intval($score),intval($level));
-
-    if(db_last_insert_id('question', 'id')) {
-      $success += 1;
-    }
-    else {
-      $fail += 1;
-    }
-    $row += 1;
-  }
-
-  $result = array(
-    'success' => $success,
-    'fail' => $fail,
-    );
-  return $result;
-}
-
-/**
- * 导入问答题
- */
-function import_question_type_text($data) {
-  $rowcount = $data->rowcount();
-  $row = 3;
-  $success = 0;
-  $fail = 0;
-  while($row <= $rowcount) {
-    $topic = $data->val($row, 3);
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
-    $score =  10;
-    $level = $data->val($row, 5);
-
-
     //问题类型:option/text
-    $type = 'text';
+    $type = $data->val($row, 1);
 
-    db_query("INSERT INTO {question} (id,topic,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%d','%d')",
-      $topic,$course,$type,$chapter,intval($score),intval($level));
+    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level)
+      VALUES(null,'%s','%s','%d','%s','%s','%s','%d','%d')",
+      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level));
 
     if(db_last_insert_id('question', 'id')) {
       $success += 1;
@@ -817,9 +646,10 @@ function import_question_type_text($data) {
     $row += 1;
   }
 
-  $result = array(
-    'success' => $success,
-    'fail' => $fail,
-    );
-  return $result;
+  drupal_set_message('成功导入'.$success.'条试题！');
+  if($fail > 0) {
+    drupal_set_message($fail.'条试题导入失败，请检查数据格式！', 'error');
+  }
+  return;
+
 }
