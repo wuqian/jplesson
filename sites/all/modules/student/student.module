@@ -853,23 +853,87 @@ function student_all_submit(&$form,&$form_state){
             0,
             0);
     $answer_id = db_last_insert_id('answer','id');
+
     //触发自动化判卷
     //找到题目列表中的选择题,读取选择题答案,答案一致则加该题目的分值
     $score = 0;
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s)',implode(",", $questions));
     krumo::dump(implode(",", $questions)); 
+    $manual_flag = 0;
     while($question = db_fetch_object($result)){
-        if ($question->type != 'option') {
+
+        if ($question->type == 'text') {
+            //问答题老师手工判卷
+            $manual_flag = 1;
             continue;
-        }
-        $question_id = $question->id;
-        if ($answers [$question->id] == $question->correct) {
-            $score += $question->score;
+        } elseif  ($question->type == 'option') {
+            if ($answers [$question->id] == $question->correct) {
+                $score += $question->score;
+            }
+        } elseif  ($question->type == 'true_false') {
+            if ($answers [$question->id] == $question->correct) {
+                $score += $question->score;
+            }
+        } elseif  ($question->type == 'multiple_option') {
+            //多选题如何判题,如何给分
+            //分解答案列表
+            $answer_array = str_split($answers[$question->id]);
+            sort($answer_array);
+            //分解正确答案列表
+            $correct_array = str_split($question->correct);
+            sort($correct_array);
+            $intersect_array = array_intersect($answer_array,$correct_array);
+            // krumo::dump($answers[$question->id]);
+            // krumo::dump($answer_array);
+            // krumo::dump('multiple_option');
+            // krumo::dump($question->correct);
+            //题目状态:[0=>'错误', 1=>'半对', 2=>'全对']
+            $stat = '2';
+            if ($answer_array == $correct_array) {
+                //答案 == 正确答案, 结果正确
+                $stat = '2';
+                $score += $question->score;
+            } elseif ($answer_array == $intersect_array) {
+                //如果$answer_array 和 $correct_array的交集 == $answer_array
+                //答案算半对
+                $stat = '1';
+                //获取多选题,判分规则
+                krumo::dump('semi');
+                switch ($question->score_strategy) {
+                    case 0:
+                        //半对的时候,不给分
+                        $score += 0;
+                        break;
+                    case 1:
+                        //半对的时候,给一半分
+                        $score += $question->score/2;
+                        break;
+                    case 2:
+                        break;
+                    default:
+                        # code...
+                        break;
+                }
+            } else {
+                //否则,答案错误
+                $stat = '0';
+                $score += 0;
+            }
+        } else {
+            echo "error";
         }
     }
+    
 
-    //更新数据库score & stat
-    db_query("UPDATE answer SET score = '%d', stat = 1 where id = %d",$score,$answer_id);
+    //需要老师手工对问答题进行批改
+    if ($manual_flag == 1) {
+        //更新数据库score & stat
+        db_query("UPDATE answer SET score = '%d', stat = 1 where id = %d",$score,$answer_id);
+    } elseif ($manual_flag == 0) {
+        //没有问答题,直接判卷
+        db_query("UPDATE answer SET score = '%d', stat = 2 where id = %d",$score,$answer_id);
+    }
+
 
 	if(db_last_insert_id('answer','id')){
 		drupal_set_message('Successfull input');
