@@ -281,7 +281,7 @@ function get_chapters($course){
     //krumo::dump($course);
   $chapters = array();
   while($result = db_fetch_object($result)){
-    $chapters = unserialize(base64_decode($result->chapters));
+    $chapters = unserialize($result->chapters);
   }
   return $chapters;
 }
