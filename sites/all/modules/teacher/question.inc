@@ -33,18 +33,31 @@ function theme_teacher_question_list($form){
     // $output = drupal_render($form['options']);
   if (isset($form['id']) && is_array($form['id'])) {
     foreach (element_children($form['id']) as $key) {
-            //krumo::dump($form['operations'][$key]);
-      $rows[] = array(
-        drupal_render($form['id'][$key]),
-        drupal_render($form['topic'][$key]),
-        drupal_render($form['type'][$key]),
-        drupal_render($form['course'][$key]),
-        drupal_render($form['chapter'][$key]),
-        drupal_render($form['score'][$key]),
-        drupal_render($form['level'][$key]),
-        drupal_render($form['edit'][$key]),
-        drupal_render($form['remove'][$key]),
-        );
+        //krumo::dump($form['operations'][$key]);
+        $row = array();
+
+        $row [] = drupal_render($form['id'][$key]);
+        $row [] = drupal_render($form['topic'][$key]);
+        $type = drupal_render($form['type'][$key]);
+        if ($type == 'text') {
+            $row[] = t('问答题');
+        } elseif ($type == 'option') {
+            $row[] = t('选择题');
+        } elseif ($type == 'true_false') {
+            $row[] = t('判断题');
+        } elseif ($type == 'multiple_option') {
+            $row[] = t('多选题');
+        } else {
+            $row[] = t('type unknown');
+        }
+        $row [] = drupal_render($form['course'][$key]);
+        $row [] = drupal_render($form['chapter'][$key]);
+        $row [] = drupal_render($form['score'][$key]);
+        $row [] = drupal_render($form['level'][$key]);
+        $row [] = drupal_render($form['edit'][$key]);
+        $row [] = drupal_render($form['remove'][$key]);
+
+        $rows[] = $row;
     }
   } else {
     $rows[] = array(array('data' => t('No users available.'), 'colspan' => '7'));
@@ -389,14 +402,94 @@ function question_edit($id) {
         //todo:
     $output = drupal_get_form('teacher_option_question_form',$question);
   } elseif ($question->type == "multiple_option") {
-
+    $output = drupal_get_form('teacher_multiple_option_question_form',$question);
   } elseif ($question->type == "true_false") {
     $output = drupal_get_form('teacher_true_false_question_form',$question);
   } else {
-    echo "123456";
+    echo "no form for the question type";
   }
   return $output;
 }
+/**
+ * [teacher_multiple_option_question_form 判断题录入]
+ * @param  [type] $form_state [description]
+ * @param  [type] $question   [description]
+ * @return [type]             [description]
+ */
+function teacher_multiple_option_question_form(&$form_state,$question){
+        //drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
+    drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
+    $form = array(
+        '#attributes' => array('class' => 'teacher-form'),
+    );
+    $form['type'] = array(
+        '#type' => 'value',
+        '#value' => "true_false"
+    );
+    //question id赋值
+    $form['id'] = array(
+        '#type' => 'value',
+        '#value' => $question->id
+    );
+    //课程选项
+    $filter = teacher_students_type_filters();
+    $courses = $filter['type']['options'];
+    $form['course'] = array(
+        '#title' => '课程',
+        '#type' => 'select',
+        '#options' => $courses,
+        '#default_value' => $question->course,
+    );
+    //查找每个课程的章节列表
+    $form['chapter'] = array(
+        '#title' => '章节',
+        '#type' => 'fieldset',
+        '#attributes' => array('id' => 'chapters'),
+    );
+    foreach ($courses as $key => $course) {
+        $chapters = get_chapters($course);
+        $form['chapter'][$course] = array(
+            '#id'=>$course,
+            '#type' => 'select',
+            '#attributes' => array('style' => 'display:none;'),
+            '#options' => $chapters,
+            '#default_value' => $question->chapter,
+        );
+    }
+    //score
+    $form['score'] = array(
+        '#title' => '分值',
+        '#type' => 'textfield',
+        '#required' => true,
+        '#default_value' => $question->score,
+    );
+    //level
+    $form['level'] = array(
+        '#title' => '难度等级',
+        '#type' => 'select',
+        '#options' => array(1,2,3,4),
+        '#required' => true,
+        '#default_value' => $question->level,
+    );
+    //topic
+    $form['topic'] = array(
+        '#title' => '题目',
+        '#type' => 'textarea',
+        '#required' => true,
+        '#default_value' => $question->topic,
+    );
+
+    $form['options'] = array();
+
+    //答案部分
+    $options = unserialize($question->option_a);
+    krumo::dump($options);
+    foreach ($optionsas as $option) {
+        $form['options'][] = 
+    }
+    return $form;
+}
+
 /**
  * [teacher_true_false_question_form 判断题录入]
  * @param  [type] $form_state [description]
