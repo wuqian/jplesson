@@ -2,8 +2,8 @@
 
 function teacher_question_manage(){
   $output = '';
-  $output .= l("添加问答题","teacher/question/add/text")."<br/>";
-  $output .= l("添加选择题","teacher/question/add/option")."<br/>";
+  //$output .= l("添加问答题","teacher/question/add/text")."<br/>";
+  //$output .= l("添加选择题","teacher/question/add/option")."<br/>";
 
   $output .= drupal_get_form('teacher_question_filter_form');
   $output .= drupal_get_form('teacher_question_list');
@@ -165,7 +165,9 @@ function topic_filters(){
     'options' => array(
       "所有"=>"所有",
       "option"=>"选择题",
-      "text"=>"问答题")
+      "text"=>"问答题",
+      "true_false"=>"判断题",
+      "multiple_option"=>"多选题")
     );
 
   $filters['topic_class'] = array(
@@ -385,12 +387,110 @@ function question_edit($id) {
   } elseif ($question->type == "option") {
         //跳转至选择题页面
         //todo:
-
     $output = drupal_get_form('teacher_option_question_form',$question);
-  }else{
+  } elseif ($question->type == "multiple_option") {
+
+  } elseif ($question->type == "true_false") {
+    $output = drupal_get_form('teacher_true_false_question_form',$question);
+  } else {
     echo "123456";
   }
   return $output;
+}
+/**
+ * [teacher_true_false_question_form 判断题录入]
+ * @param  [type] $form_state [description]
+ * @param  [type] $question   [description]
+ * @return [type]             [description]
+ */
+function teacher_true_false_question_form(&$form_state,$question){
+    //drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
+    drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
+    $form = array(
+        '#attributes' => array('class' => 'teacher-form'),
+    );
+    $form['type'] = array(
+        '#type' => 'value',
+        '#value' => "true_false"
+    );
+    //question id赋值
+    $form['id'] = array(
+        '#type' => 'value',
+        '#value' => $question->id
+    );
+    //课程选项
+    $filter = teacher_students_type_filters();
+    $courses = $filter['type']['options'];
+    $form['course'] = array(
+        '#title' => '课程',
+        '#type' => 'select',
+        '#options' => $courses,
+        '#default_value' => $question->course,
+    );
+    //查找每个课程的章节列表
+    $form['chapter'] = array(
+        '#title' => '章节',
+        '#type' => 'fieldset',
+        '#attributes' => array('id' => 'chapters'),
+    );
+    foreach ($courses as $key => $course) {
+        $chapters = get_chapters($course);
+        $form['chapter'][$course] = array(
+            '#id'=>$course,
+            '#type' => 'select',
+            '#attributes' => array('style' => 'display:none;'),
+            '#options' => $chapters,
+            '#default_value' => $question->chapter,
+        );
+    }
+    //score
+    $form['score'] = array(
+        '#title' => '分值',
+        '#type' => 'textfield',
+        '#required' => true,
+        '#default_value' => $question->score,
+    );
+    //level
+    $form['level'] = array(
+        '#title' => '难度等级',
+        '#type' => 'select',
+        '#options' => array(1,2,3,4),
+        '#required' => true,
+        '#default_value' => $question->level,
+    );
+    //topic
+    $form['topic'] = array(
+        '#title' => '题目',
+        '#type' => 'textarea',
+        '#required' => true,
+        '#default_value' => $question->topic,
+    );
+
+    //答案部分
+    //$question->correct: 0:错误, 1:正确
+    $form['radios'] = array(
+        '#type' => 'radios',
+        '#options' => array('错误','正确'),
+        '#default_value' => $question->correct,
+    );
+    //
+    //$form['#validate'] = array('add_option_question_validate');
+    if ($question){
+        //已有question调用update接口
+        $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => 'submit',
+            '#submit' => array('update_question_submit'),
+        );
+    }else{
+        //新增question调用add接口
+        $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'submit',
+        '#submit' => array('add_question_submit'),
+        );
+    }
+    return $form;
 }
 
 /**
@@ -399,6 +499,7 @@ function question_edit($id) {
 function teacher_option_question_form(&$form_state,$question){
   drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
   drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
+  
   $form = array(
     '#attributes' => array('class' => 'teacher-form'),
     );
@@ -406,13 +507,13 @@ function teacher_option_question_form(&$form_state,$question){
     '#type' => 'value',
     '#value' => "option"
     );
-    //question id赋值
+  //question id赋值
   $form['id'] = array(
     '#type' => 'value',
     '#value' => $question->id
     );
 
-    //课程选项
+  //课程选项
   $filter = teacher_students_type_filters();
   $courses = $filter['type']['options'];
   $form['course'] = array(
@@ -422,7 +523,7 @@ function teacher_option_question_form(&$form_state,$question){
     '#default_value' => $question->course,
     );
 
-    //查找每个课程的章节列表
+  //查找每个课程的章节列表
   $form['chapter'] = array(
     '#title' => '章节',
     '#type' => 'fieldset',
