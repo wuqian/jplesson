@@ -812,15 +812,36 @@ function student_all_validate(&$form,&$form_state){
  */
 function student_all_submit(&$form,&$form_state){
 	global $user;
+    //获取试卷id
 	$questionpaper_id = $form_state['values']['questionpaper_id'];
     $questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$questionpaper_id"));
+    //获取试题id列表
     $questions = unserialize($questions);
 	//krumo::dump($questionpaper_id);
+    
     //从表单中获取答题结果
     $answers = array();
     foreach ($questions as $question) {
-        $answers [$question] = $form_state['values'][$question];
-        //krumo::dump($form_state['values'][$question]);
+        //多选题需要将答题结果进行处理后存入
+        //读取数据库判断题目类型,对多选题的答案做特殊处理
+        $result = db_query("SELECT * FROM {question} WHERE id=$question");
+        $q = db_fetch_object($result);
+        //krumo::dump($q);
+        if ($q->type == 'multiple_option') {
+            $answers [$question] = '';
+            $options = unserialize($q->option_a);
+            foreach ($options as $key => $value) {
+                //if option index is unchecked 
+                if ($form_state['values'][$question.'-'.$key] == 0){
+                    continue;
+                }
+                $answers [$question] .= $key+1;
+            };
+        } else {
+            //单选,判断,问答题:处理相对简单
+            $answers [$question] = $form_state['values'][$question];
+        }
+        //krumo::dump($answers [$question]);
     }
 
     //将答案序列化存入数据库中
