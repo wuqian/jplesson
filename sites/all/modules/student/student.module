@@ -614,7 +614,9 @@ function student_cisco_bind_submit($form, &$form_state) {
   global $user;
   $student_id = $user->uid;
   $class = $user->class;
-	$result = pager_query("SELECT * FROM {questionpaper} WHERE class_id = '$class'", 20, 0, NULL);
+  //todo: 使用like对班级进行模糊匹配,可能会引入bug;
+  //在没有班级实体的情况下,暂用此这种方案
+	$result = pager_query("SELECT * FROM {questionpaper} WHERE class_id LIKE '%$class%'", 20, 0, NULL);
 	
 	while($term = db_fetch_object($result)){
 		$results[] = $term;
@@ -624,8 +626,9 @@ function student_cisco_bind_submit($form, &$form_state) {
 	if(!empty($results)) {
 		foreach($results as $res){
 			$form[$res->pid]['#config'] = (array)$res;
-			$form[$res->pid]['pid'] = array('#value' => 'examination paper of'.' '.check_plain($res->pid));
-			$form[$res->pid]['class_id'] = array('#value' => check_plain($res->class_id));
+			$form[$res->pid]['pid'] = array('#value' => check_plain($res->title));
+      $class_id = implode(',', unserialize($res->class_id));
+			$form[$res->pid]['class_id'] = array('#value' => $class_id);
 
             //根据questionpaper_id,student_id 查找答题记录
             $questionpaper_id = $res->pid;
@@ -704,6 +707,7 @@ function theme_student_examination_list($form){
 	}
 	return theme('table',$header,$rows,array('id'=>'student-list')).drupal_render($form);
 }
+
 /*
  * Generating examination paper;
  */
@@ -721,6 +725,8 @@ function student_all(&$form_state, $questionpaper_id){
     
     //从数据库中获取question的详细信息
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
+
+    //将题目输出到表单
     $index = 1;
     while($question = db_fetch_object($result)){
         //为题目创建form:(区分选择题＆问答题)
@@ -743,11 +749,33 @@ function student_all(&$form_state, $questionpaper_id){
                 '#type' => 'radios',
                 '#options' => $arr,
             );
+        } elseif ($question->type == 'true_false') {
+            $form[$question->id][$question->id.'topic'] = array(
+                '#type' => 'item',
+                '#title' => $index.'.'.$question->topic,
+            );
+            $form[$question->id][$question->id] = array(
+                '#type' => 'radios',
+                '#options' => array("错误","正确"),
+            );
+        } elseif ($question->type == 'multiple_option') {
+            $form[$question->id][$question->id.'topic'] = array(
+                '#type' => 'item',
+                '#title' => $index.'.'.$question->topic,
+            );
+            $options = unserialize($question->option_a);
+            foreach ($options as $key=>$option) {
+                $form[$question->id][$question->id.'-'.$key] = array(
+                    '#type' => 'checkbox',
+                    '#title' => $option
+                ); 
+            }
         } else {
-            krumo::dump("error");
+            krumo::dump("unknown question type");
         }
         $index ++;
     }
+
     //krumo::dump($form);
 	$form['#validate'] = array('student_all_validate');
 	$form['submit'] = array(
