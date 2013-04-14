@@ -314,10 +314,18 @@ function theme_teacher_all_options($form){
             $row = array();
             $row[] = drupal_render($vocabulary['id']);
             $row[] = drupal_render($vocabulary['topic']);
-            if (drupal_render($vocabulary['type']) == text) {
+
+            $type = drupal_render($vocabulary['type']);
+            if ($type == 'text') {
                 $row[] = t('问答题');
-            }elseif (drupal_render($vocabulary['type']) == option) {
+            } elseif ($type == 'option') {
                 $row[] = t('选择题');
+            } elseif ($type == 'true_false') {
+                $row[] = t('判断题');
+            } elseif ($type == 'multiple_option') {
+                $row[] = t('多选题');
+            } else {
+                $row[] = t('type unknown');
             }
 
             $row[] = drupal_render($vocabulary['score']);
