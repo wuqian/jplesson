@@ -221,36 +221,13 @@ function teacher_all_options(&$form_state){
     );
     //krumo::dump($filters['class']);
 
-    $form['options']['available_class_id'] = array(
-        '#title' => '班级列表',
-        '#type' => 'select',
-        '#multiple' => true,
-        '#enable'=>true,
-        '#options' => $filters['class']['options'],
-        //'#attributes'=>array('style' => 'width:100'),
-    );
-
-    $form['options']['add_class_id'] = array(
-        '#value' => 'Add',
-        '#type' => 'submit',
-        '#submit' => array('teacher_questionpaper_add_class'),
-    );
-
-    $form['options']['remove_class_id'] = array(
-        '#value' => 'Remove',
-        '#type' => 'submit',
-        '#submit' => array('teacher_questionpaper_remove_class'),
-    );
-
-    $form['options']['selected_class_id'] = array(
-        '#title' => '已选班级列表',
-        '#type' => 'select',
-        '#multiple' => true,
-        '#enable'=>true,
-        '#size' => 5,
-        //'#attributes'=>array('style' => 'width:100'),
-        '#options' =>  $_SESSION['selected_class_id'],
-    );
+    $form['options']['available_class_id'] = array();
+    foreach ($filters['class']['options'] as $key => $class_id) {
+        $form['options']['available_class_id'][$class_id] = array(
+            '#title' => $class_id,
+            '#type' => 'checkbox',
+        );
+    }
 
     $form['options']['title'] = array(
             '#title' => '试卷名称',
@@ -284,23 +261,6 @@ function teacher_all_options(&$form_state){
 
     $form['pager'] = array('#value' => theme('pager', null, 20, 0));
     return $form;
-}
-
-//将选中的classid,从session中删除
-function teacher_questionpaper_remove_class(&$form,&$form_state){
-    $selected_class_id = $form_state['values']['options']['selected_class_id'];
-    $_SESSION['selected_class_id'] = array_diff($_SESSION['selected_class_id'],$selected_class_id);
-}
-
-//将选中的classid,加入到session中
-function teacher_questionpaper_add_class(&$form,&$form_state){
-    $selected_class_id = $form_state['values']['options']['available_class_id'];
-    krumo::dump($class_id);
-    if (!$_SESSION['selected_class_id']){
-        $_SESSION['selected_class_id'] = $selected_class_id;
-    } else {
-        $_SESSION['selected_class_id'] = array_merge($_SESSION['selected_class_id'], $selected_class_id);
-    }
 }
 
 function theme_teacher_all_options($form){
@@ -351,19 +311,23 @@ function theme_teacher_all_options($form){
  * 点击生成手工试卷
  */
 function teacher_questionpaper_submit(&$form,&$form_state){
-    //$class_id = $form_state['values']['options']['class_id'];
-    $selected_class_id = $_SESSION['selected_class_id'];
 
-    //删除session中的残留值
-    $_SESSION['selected_class_id'] = NULL;
+    $class_id_list = $form_state['values']['options']['available_class_id'];
+    $selected_class = array();
+    foreach ($class_id_list as $class_id => $select) {
+        $selected_class [] = $class_id;
+    }
+
+    //krumo::dump($selected_class);
     
     //todo:表单验证
-    if (!$selected_class_id) {
-
+    if (!$selected_class) {
+        krumo::dump("班级未选择");
         return;
     }
+
     //将试卷所对应的班级进行序列化
-    $selected_class_id = serialize($selected_class_id);
+    $selected_class = serialize($selected_class);
 
     $title = $form_state['values']['options']['title'];
 
@@ -379,7 +343,7 @@ function teacher_questionpaper_submit(&$form,&$form_state){
     }
 
     db_query("insert into {questionpaper} (class_id,questions,title)
-            values ('%s','%s','%s')",$selected_class_id,serialize($questions),$title);
+            values ('%s','%s','%s')",$selected_class,serialize($questions),$title);
 }
 
 /*

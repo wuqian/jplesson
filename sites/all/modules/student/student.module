@@ -649,11 +649,11 @@ function student_cisco_bind_submit($form, &$form_state) {
                 $form[$res->pid]['check'] = array('#value' => check_plain('已完成'));
             }
 
-            krumo::dump($answer);
+            //krumo::dump($answer);
             //如果已经判卷完成,显示　考分查看结果
             if ($answer != NULL && $answer->stat == 2) {
                 $form[$res->pid]['score'] = array('#value' => check_plain($answer->score));
-                krumo::dump($answer);
+                //krumo::dump($answer);
             } else {
                 $form[$res->pid]['score'] = array('#value' => '');
             }
@@ -858,7 +858,7 @@ function student_all_submit(&$form,&$form_state){
     //找到题目列表中的选择题,读取选择题答案,答案一致则加该题目的分值
     $score = 0;
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s)',implode(",", $questions));
-    krumo::dump(implode(",", $questions)); 
+    //krumo::dump(implode(",", $questions)); 
     $manual_flag = 0;
     while($question = db_fetch_object($result)){
 
@@ -898,7 +898,7 @@ function student_all_submit(&$form,&$form_state){
                 //答案算半对
                 $stat = '1';
                 //获取多选题,判分规则
-                krumo::dump('semi');
+                //krumo::dump('semi');
                 switch ($question->score_strategy) {
                     case 0:
                         //半对的时候,不给分
