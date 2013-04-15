@@ -52,6 +52,10 @@ function teacher_theme() {
 		'teacher_all_options' => array(
 			'arguments' => array('form' => array()),
 		),
+    'add_auto_questionpaper' => array(
+      'template' => 'add_auto_questionpaper',
+      'arguments' => array('params' => ''),
+    ),
   );
 }
 

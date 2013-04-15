@@ -1,13 +1,12 @@
 $(document).ready(function(){
-    $('#chapters .chapter').hide();
     var currentCourse = $('#edit-course').val();
-    $('#' + currentCourse + '-wrapper').show();
+    $('#' + currentCourse + '-setting').appendTo('#settingsInput');
 
     $('#edit-course').change(function(){
         //console.log(this.value);
-        $('#chapters .chapter').hide();
+        $('#settingsInput .course-settings').appendTo('#unusedInput');
         //获取课程名称
-        var id = '#' + this.value + '-wrapper';
-        $(id).show();
+        var id = '#' + this.value + '-setting';
+        $(id).appendTo('#settingsInput');
     });
 });

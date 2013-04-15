@@ -5,116 +5,91 @@
 * @param  string $value [description]
 * @return [type]        [description]
 */
-function teacher_add_auto_questionpaper(&$form_state)
+function teacher_add_auto_questionpaper()
 {
+  if (!empty($_POST)) {
+    teacher_add_auto_questionpaper_submit($_POST);
+  }
+
+  global $base_url;
   drupal_add_js('sites/all/modules/teacher/teacher_add_auto_questionpaper.js','file');
 
-  $form = array(
-    '#attributes' => array('id' => 'add-auto-questionpaper-form'),
-    );
+  $output = '';
 
-//输入试卷标题
-  $form['title'] = array(
-    '#title' => '标题',
-    '#type' => 'textfield',
-    '#required' => true,
-    '#default' => '',
-    );
-
-  $form['class_id'] = array(
-    '#title' => '班级',
-    '#type' => 'select',
-    '#options' => getClassesOptionList(),
-    );
-
-//课程选项
+  $classes = getClassesOptionList();
   $courses = getCoursesOptionList();
 
-  $keys = array_keys($courses);
-  $courseSelected = $courses[$keys[1]];
+  $params = array();
 
-  $form['course'] = array(
-    '#title' => '课程',
-    '#type' => 'select',
-    '#options' => $courses,
-    '#default_value' => $courseSelected,
-    );
-  
-  
-//查找每个课程的章节列表
-  $form['chapter'] = array(
-    '#title' => '章节',
-    '#type' => 'fieldset',
-    '#attributes' => array('id' => 'chapters'),
-    );
+  $params['classes'] = $classes;
+
   foreach ($courses as $key => $course) {
     $chapters = get_chapters($course);
-    $form['chapter'][$course] = array(
-      '#id'=>$course,
-      '#type' => 'item',
-      '#attributes' => array('class' => 'chapter'),
-      );
-    $form['chapter'][$course][$course] = array(
-      '#type' => 'checkboxes',
-      '#options' => $chapters
+    $params['courses'][] = array(
+      'name' => $course,
+      'chapters' => $chapters,
       );
   }
 
-//score
-  $form['score'] = array(
-    '#title' => '总分值',
-    '#type' => 'textfield',
-    '#required' => true,
-    );
-
-//level
-  $form['level'] = array(
-    '#title' => '难度等级',
-    '#type' => 'select',
-    '#options' => array('A','B','C','D'),
-    );
-
-  $form['#validate'] = array('teacher_add_auto_questionpaper_validate');
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => '生成',
-    '#submit' => array('teacher_add_auto_questionpaper_submit'),
-    );
-  return $form; 
+  $output = theme('add_auto_questionpaper', $params);
+  
+  return $output;
 
 }
 
-function teacher_add_auto_questionpaper_submit(&$form,&$form_state){
+function teacher_add_auto_questionpaper_submit($post){
 
   $paperParams = array();
-  $paperParams['course'] = $form_state['values']['course'];
-  $paperParams['chapters'] = $form_state['values'][$paperParams['course']];
-  $paperParams['totalScore'] = $form_state['values']['score'];
+  $paperParams['course'] = $post['course'];
+  $paperParams['chapterCount'] = $post['chapterCount'];
+  
+  $paperParams['chapters'] = array();
 
+  //获取post中的章节题型难度分布数据
+  for ($i=0; $i < $post['chapterCount']; $i++) { 
+
+    $paperParams['chapters'][$i]['option'] = $post['option-' . $i];
+    $paperParams['chapters'][$i]['multiple_option'] = $post['multiple_option-' . $i];
+    $paperParams['chapters'][$i]['true_false'] = $post['true_false-' . $i];
+    $paperParams['chapters'][$i]['text'] = $post['text-' . $i];
+
+    $paperParams['chapters'][$i]['level1'] = $post['level1-' . $i];
+    $paperParams['chapters'][$i]['level2'] = $post['level2-' . $i];
+    $paperParams['chapters'][$i]['level3'] = $post['level3-' . $i];
+    $paperParams['chapters'][$i]['level4'] = $post['level4-' . $i];
+
+
+    //检测类型与难度数量设置匹配
+    $typeCount = $paperParams['chapters'][$i]['option'] + $paperParams['chapters'][$i]['multiple_option'] + $paperParams['chapters'][$i]['true_false'] + $paperParams['chapters'][$i]['text'];
+    $levelCount = $paperParams['chapters'][$i]['level1'] + $paperParams['chapters'][$i]['level2'] + $paperParams['chapters'][$i]['level3'] + $paperParams['chapters'][$i]['level4'];
+    if ($typeCount != $levelCount) {
+      drupal_set_message('类型与难度数量设置不匹配','error');
+      return;
+    }
+
+  }
+
+  
   $paper = generateQuestionPaper($paperParams);
 
   if ($paper == FALSE) {
     drupal_set_message('试题数量不足','error');
     return;
   }
+
   //试卷插入数据库
   $paper = serialize($paper);
   db_query("INSERT INTO {questionpaper} (title,class_id,questions)
-            VALUES('%s','%s','%s')", $form_state['values']['title'], $form_state['values']['class_id'], $paper);
+            VALUES('%s','%s','%s')", $post['title'], $post['class_id'], $paper);
 
   if(db_last_insert_id('questionpaper', 'pid')){
     drupal_set_message('试卷生成成功!');
+    drupal_goto('teacher/questionpaper/manage');
   }
   else {
     drupal_set_message('试卷生成失败, 请重试。','error');
   }
 }
-
-function teacher_add_auto_questionpaper_validate(&$form,&$form_state) {
-
-}
-
 
 /**
  * 获取班级列表
@@ -137,7 +112,6 @@ function getCoursesOptionList()
   $options = array();
   $result = db_query("SELECT DISTINCT title from {node} where type = 'lesson'");
   while($option = db_fetch_object($result)){
-    $options['未分类'] = '未分类';
     $options[$option->title] = $option->title;
 
   }
@@ -151,40 +125,60 @@ function getCoursesOptionList()
  */
 function generateQuestionPaper($params)
 {
-  $chapterQuery = array();
-  foreach ($params['chapters'] as $chapter => $selected) {
-    if ($selected) {
-      $chapterQuery[] = $chapter;
-    }
-  }
-  $chapterQuery = implode(",", $chapterQuery);
-
-  $result = db_query('SELECT * FROM {question} WHERE course = "%s" AND chapter IN (%s)', $params['course'], $chapterQuery);
-
-  //取得指定课程章节所有试题
-  $questions = array();
-  while($question = db_fetch_object($result)) {
-    $questions[] = $question;
-  }
-  //打乱顺序
-  shuffle($questions);
-
   $paper = array();
-  $totalScore = $params['totalScore'];
-  $currentScore = 0;
 
-  while($currentScore < $totalScore) {
-    if(!count($questions)) break;
-    $questionPop = array_pop($questions);
-    $paper[] = $questionPop->id;
-    $currentScore += $questionPop->score;
+  foreach ($params['chapters'] as $key => $chapter) {
+
+    //通过章节id查询章节名称
+    $chapters = get_chapters($params['course']);
+    $chapterQuery = $chapters[$key];
+    $result = db_query('SELECT * FROM {question} WHERE course = "%s" AND chapter = "%s"', $params['course'], $chapterQuery);
+    
+    while($question = db_fetch_object($result)) {
+      $questions[] = $question;
+    }
+    shuffle($questions);
+
+    //用试题填充条件
+    foreach ($questions as $key => $question) {
+      if (testInsert($chapter, $question)) {
+        $paper[] = $question->id;
+        $chapter[$question->type] -= 1;
+        $chapter['level' . $question->level] -= 1;
+      }
+
+      // krumo::dump(isChapterFull($chapter));
+      //装满退出
+      if (isChapterFull($chapter)) {
+        break;
+      }
+    }
+
+    if (!isChapterFull($chapter)) {
+      return FALSE;//试题数量不足
+    }
+
   }
-
-  if ($currentScore < $totalScore) {
-    return FALSE; //试题数量不足总分
-  }
-
   return $paper;
+}
+
+function isChapterFull($chapter) {
+  $sum = $chapter['option'] + $chapter['multiple_option'] + $chapter['true_false'] + $chapter['text'] + 
+  $chapter['level1'] + $chapter['level2'] + $chapter['level3'] + $chapter['level4'];
+  if ($sum == 0) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+function testInsert($chapter, $question) {
+  $typeReq = $chapter[$question->type] - 1;
+  $levelReq = $chapter['level' . $question->level] - 1;
+
+  if ($typeReq >= 0 && $levelReq >= 0) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 function teacher_add_manually_questionpaper()
