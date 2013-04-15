@@ -1021,7 +1021,7 @@ function import_question_type_text($data) {
     $course = $data->val($row, 1);
     $chapter = $data->val($row, 2);
     $score =  10;
-    $level = $data->val($row, 5);
+    $level = $data->val($row, 4);
 
 
     //问题类型:option/text

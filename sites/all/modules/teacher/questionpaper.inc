@@ -330,7 +330,9 @@ function teacher_questionpaper_submit(&$form,&$form_state){
     $class_id_list = $form_state['values']['options']['available_class_id'];
     $selected_class = array();
     foreach ($class_id_list as $class_id => $select) {
+      if ($select) {
         $selected_class [] = $class_id;
+      }
     }
 
     //krumo::dump($selected_class);
@@ -548,24 +550,9 @@ function questionpaper_answer_correct(&$form_state, $questionpaper_id){
         '#size' => 10, 
         '#required' => TRUE,
         );
-    } elseif ($question->type == 'option') {
-
-      //选择题不进行批改
-
-
-      //       //选择题
-      // $form[][$question->id] = array(
-      //   '#type' => 'item',
-      //           //'#default_value' => '1',
-      //   '#title' => $index .'.'.$question->topic,
-      //   );
-      // $arr = unserialize($question->option_a);
-      // $form[][$question->id] = array(
-      //   '#type' => 'radios',
-      //   '#options' => $arr,
-      //   );
     } else {
-      krumo::dump("error");
+      //其他类型题目自动判卷
+      //krumo::dump("error");
     }
     $index ++;
 

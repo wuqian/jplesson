@@ -828,18 +828,18 @@ function student_all_submit(&$form,&$form_state){
         $q = db_fetch_object($result);
         //krumo::dump($q);
         if ($q->type == 'multiple_option') {
-            $answers [$question] = '';
+            $answers[$question] = '';
             $options = unserialize($q->option_a);
             foreach ($options as $key => $value) {
                 //if option index is unchecked 
                 if ($form_state['values'][$question.'-'.$key] == 0){
                     continue;
                 }
-                $answers [$question] .= $key+1;
+                $answers[$question] .= $key+1;
             };
         } else {
             //单选,判断,问答题:处理相对简单
-            $answers [$question] = $form_state['values'][$question];
+            $answers[$question] = $form_state['values'][$question];
         }
         //krumo::dump($answers [$question]);
     }
