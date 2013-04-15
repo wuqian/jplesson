@@ -11,7 +11,6 @@ function teacher_add_auto_questionpaper()
     teacher_add_auto_questionpaper_submit($_POST);
   }
 
-  global $base_url;
   drupal_add_js('sites/all/modules/teacher/teacher_add_auto_questionpaper.js','file');
 
   $output = '';
@@ -39,6 +38,28 @@ function teacher_add_auto_questionpaper()
 
 function teacher_add_auto_questionpaper_submit($post){
 
+  //检验表单提交项
+  if (empty($post['title'])) {
+    drupal_set_message('请填写试卷标题','error');
+    return;
+  }
+  
+  if (empty($post['class_ids'])) {
+    drupal_set_message('请选择试卷目标班级','error');
+    return;
+  }
+    
+  //检验总题数大于0
+  $totleQuestionCount = 0;
+  for ($i=0; $i < $post['chapterCount']; $i++) { 
+    $totleQuestionCount += array_sum($post['chapter-' . $i]);
+  }
+  if ($totleQuestionCount == 0) {
+    drupal_set_message('请设置试题数量','error');
+    return;
+  }
+
+
   $paperParams = array();
   $paperParams['course'] = $post['course'];
   $paperParams['chapterCount'] = $post['chapterCount'];
@@ -48,22 +69,19 @@ function teacher_add_auto_questionpaper_submit($post){
   //获取post中的章节题型难度分布数据
   for ($i=0; $i < $post['chapterCount']; $i++) { 
 
-    $paperParams['chapters'][$i]['option'] = $post['option-' . $i];
-    $paperParams['chapters'][$i]['multiple_option'] = $post['multiple_option-' . $i];
-    $paperParams['chapters'][$i]['true_false'] = $post['true_false-' . $i];
-    $paperParams['chapters'][$i]['text'] = $post['text-' . $i];
-
-    $paperParams['chapters'][$i]['level1'] = $post['level1-' . $i];
-    $paperParams['chapters'][$i]['level2'] = $post['level2-' . $i];
-    $paperParams['chapters'][$i]['level3'] = $post['level3-' . $i];
-    $paperParams['chapters'][$i]['level4'] = $post['level4-' . $i];
-
+    $paperParams['chapters'][$i] = $post['chapter-' . $i];
 
     //检测类型与难度数量设置匹配
-    $typeCount = $paperParams['chapters'][$i]['option'] + $paperParams['chapters'][$i]['multiple_option'] + $paperParams['chapters'][$i]['true_false'] + $paperParams['chapters'][$i]['text'];
-    $levelCount = $paperParams['chapters'][$i]['level1'] + $paperParams['chapters'][$i]['level2'] + $paperParams['chapters'][$i]['level3'] + $paperParams['chapters'][$i]['level4'];
+    $typeCount = $post['chapter-' . $i]['option'] +
+                 $post['chapter-' . $i]['multiple_option'] +
+                 $post['chapter-' . $i]['true_false'] +
+                 $post['chapter-' . $i]['text']; 
+    $levelCount = $post['chapter-' . $i]['level1'] +
+                  $post['chapter-' . $i]['level2'] +
+                  $post['chapter-' . $i]['level3'] +
+                  $post['chapter-' . $i]['level4']; 
     if ($typeCount != $levelCount) {
-      drupal_set_message('类型与难度数量设置不匹配','error');
+      drupal_set_message('类型与难度题目数量设置不匹配','error');
       return;
     }
 
@@ -79,8 +97,11 @@ function teacher_add_auto_questionpaper_submit($post){
 
   //试卷插入数据库
   $paper = serialize($paper);
+
+  $classId = serialize($post['class_ids']);
+
   db_query("INSERT INTO {questionpaper} (title,class_id,questions)
-            VALUES('%s','%s','%s')", $post['title'], $post['class_id'], $paper);
+            VALUES('%s','%s','%s')", $post['title'], $classId, $paper);
 
   if(db_last_insert_id('questionpaper', 'pid')){
     drupal_set_message('试卷生成成功!');
@@ -183,6 +204,7 @@ function testInsert($chapter, $question) {
 
 function teacher_add_manually_questionpaper()
 {
+    drupal_add_css(drupal_get_path('module', 'teacher') .'/add_manually_questionpaper.css', 'module', 'all', FALSE);
     $output = drupal_get_form('teacher_choice_filter_form');
     $output .= drupal_get_form('teacher_all_options');
     return $output;
@@ -214,6 +236,10 @@ function teacher_all_options(&$form_state){
         '#type' => 'fieldset',
     );
     //krumo::dump($filters['class']);
+    $form['options']['title'] = array(
+            '#title' => '试卷名称',
+            '#type' => 'textfield',
+    ); 
 
     $form['options']['available_class_id'] = array();
     foreach ($filters['class']['options'] as $key => $class_id) {
@@ -222,11 +248,6 @@ function teacher_all_options(&$form_state){
             '#type' => 'checkbox',
         );
     }
-
-    $form['options']['title'] = array(
-            '#title' => '试卷名称',
-            '#type' => 'textfield',
-    ); 
 
     while($term = db_fetch_object($result)){
         $results[] = $term;
