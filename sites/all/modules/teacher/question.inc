@@ -761,17 +761,17 @@ function import_questions_form() {
   $form['fieldset'] = array(
     '#type' => 'fieldset', 
     );
-  $form['fieldset']['type'] = array(
-    '#type' => 'select',
-    '#title' => t('选择导入的试题类型'),
-    '#default_value' => 'text',
-    '#options' => array(
-      'text' => t('问答题'), 
-      'option' => t('单选题'), 
-      'multiple_option' => t('多选题'),
-      'true_false' => t('判断题'),
-      ),
-    );
+  // $form['fieldset']['type'] = array(
+  //   '#type' => 'select',
+  //   '#title' => t('选择导入的试题类型'),
+  //   '#default_value' => 'text',
+  //   '#options' => array(
+  //     'text' => t('问答题'), 
+  //     'option' => t('单选题'), 
+  //     'multiple_option' => t('多选题'),
+  //     'true_false' => t('判断题'),
+  //     ),
+  //   );
   $form['fieldset']['upload'] = array(
     '#type' => 'file',
     '#title' => t('选择要导入的试题数据表格'),
@@ -835,7 +835,7 @@ function import_questions_form_submit($form, &$form_state) {
   }
 
   drupal_set_message('成功导入'. $result['success'] . '条试题！');
-  if($fail > 0) {
+  if($result['fail'] > 0) {
     drupal_set_message($result['fail'] . '条试题导入失败，请检查数据格式！', 'error');
   }
   return;
@@ -851,19 +851,30 @@ function import_question_type_option($data) {
   $success = 0;
   $fail = 0;
   while($row <= $rowcount) {
+
     $topic = $data->val($row, 3);
+    if(empty($topic)) {
+      $fail += 1;
+      $row += 1;
+      continue;
+    }
+
     $course = $data->val($row, 1);
     $chapter = $data->val($row, 2);
     $score =  2;
-    $level = $data->val($row, 9);
-    $correct = $data->val($row, 8);
+    $level = $data->val($row, 13);
+    $correct = $data->val($row, 12);
 
     //序列化数组
-    $a = $data->val($row, 4);
-    $b = $data->val($row, 5);
-    $c = $data->val($row, 6);
-    $d = $data->val($row, 7);
-    $teachersubject = array($a,$b,$c,$d);
+    $teachersubject = array();
+    foreach (range(4, 11) as $index) {
+      # code...
+      $value = $data->val($row, $index);
+      if (strlen($value) > 0) {
+        $teachersubject[] = $value;
+      }
+    }
+
     $con = serialize($teachersubject);
 
     //问题类型:
@@ -899,30 +910,36 @@ function import_question_type_multiple_option($data) {
   $fail = 0;
   while($row <= $rowcount) {
     $topic = $data->val($row, 3);
+    if(empty($topic)) {
+      $fail += 1;
+      $row += 1;
+      continue;
+    }
+
     $course = $data->val($row, 1);
     $chapter = $data->val($row, 2);
     $score =  4;
     $level = $data->val($row, 13);
     $correct = $data->val($row, 12);
+    $score_strategy = $data->val($row, 14);
 
-    //序列化数组
-    $a = $data->val($row, 4);
-    $b = $data->val($row, 5);
-    $c = $data->val($row, 6);
-    $d = $data->val($row, 7);
-    $e = $data->val($row, 8);
-    $f = $data->val($row, 9);
-    $g = $data->val($row, 10);
-    $h = $data->val($row, 11);
-    $teachersubject = array($a, $b, $c, $d, $e, $f, $g, $h);
+    $teachersubject = array();
+    foreach (range(4, 11) as $index) {
+      # code...
+      $value = $data->val($row, $index);
+      if (strlen($value) > 0) {
+        $teachersubject[] = $value;
+      }
+    }
+
     $con = serialize($teachersubject);
 
     //问题类型
     $type = 'multiple_option';
 
-    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d')",
-      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level));
+    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level,score_strategy)
+      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d','%d')",
+      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level),intval($score_strategy));
 
     if(db_last_insert_id('question', 'id')) {
       $success += 1;
@@ -950,6 +967,12 @@ function import_question_type_true_false($data) {
   $fail = 0;
   while($row <= $rowcount) {
     $topic = $data->val($row, 3);
+    if(empty($topic)) {
+      $fail += 1;
+      $row += 1;
+      continue;
+    }
+
     $course = $data->val($row, 1);
     $chapter = $data->val($row, 2);
     $score =  2;
@@ -989,6 +1012,12 @@ function import_question_type_text($data) {
   $fail = 0;
   while($row <= $rowcount) {
     $topic = $data->val($row, 3);
+    if(empty($topic)) {
+      $fail += 1;
+      $row += 1;
+      continue;
+    }
+
     $course = $data->val($row, 1);
     $chapter = $data->val($row, 2);
     $score =  10;
