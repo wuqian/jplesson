@@ -482,11 +482,11 @@ function teacher_multiple_option_question_form(&$form_state,$question){
     $form['options'] = array();
 
     //答案部分
-    $options = unserialize($question->option_a);
-    krumo::dump($options);
-    foreach ($optionsas as $option) {
-        $form['options'][] = 
-    }
+    // $options = unserialize($question->option_a);
+    // krumo::dump($options);
+    // foreach ($optionsas as $option) {
+    //     $form['options'][] = 
+    // }
     return $form;
 }
 
