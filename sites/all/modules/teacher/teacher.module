@@ -1118,7 +1118,7 @@ function teacher_question_list_all(&$form_state, $op){
         if ($question->type == 'text') {
             //问答题
             $form[][$question->id] = array(
-                '#type' => 'item',
+                '#type' => 'textarea',
                 '#title' => $index .'.'.$question->topic,
             );
         } elseif ($question->type == 'option') {
@@ -1133,6 +1133,27 @@ function teacher_question_list_all(&$form_state, $op){
                 '#type' => 'radios',
                 '#options' => $arr,
             );
+        } elseif ($question->type == 'true_false') {
+        	$form[][$question->id] = array(
+                '#type' => 'item',
+                '#title' => $index.'.'.$question->topic,
+            );
+            $form[][$question->id] = array(
+                '#type' => 'radios',
+                '#options' => array('错误', '正确'),
+            );
+        } elseif ($question->type == 'multiple_option') {
+        	$form[][$question->id] = array(
+                '#type' => 'item',
+                '#title' => $index.'.'.$question->topic,
+            );
+            $options = unserialize($question->option_a);
+            foreach ($options as $key=>$option) {
+                $form[][$question->id.'-'.$key] = array(
+                    '#type' => 'checkbox',
+                    '#title' => $option
+                ); 
+            }
         } else {
             krumo::dump("error");
         }
