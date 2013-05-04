@@ -48,7 +48,11 @@
             <?php endforeach ?>
         </select>
     </fieldset>
-
+    <fieldset>
+        <label>试卷总计分数：</label>
+        <span id="total-score">0</span>
+        <span>分</span>
+    </fieldset>
     <div id="settingsInput"></div>
 
     <input type="submit" name="op" id="edit-submit" value="生成试卷" class="form-submit">
@@ -59,7 +63,7 @@
 
     <?php foreach ($params['courses'] as $key => $course): ?>
         <div class="course-settings" id="<?php echo $course['name'] ?>-setting">
-            <fieldset>
+            <fieldset class="types-settings">
                 <legend>题型分布</legend>
                 <?php foreach ($course['chapters'] as $key => $chapter): ?>
                     <div class="form-item">
@@ -67,13 +71,13 @@
                             <label><?php echo ($key + 1) . '. ' . $chapter ?></label>
                         </div>
                         <span class="field-prefix">单选题</span> 
-                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[option]" id="edit-option" size="4" value="" class="form-text required">
+                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[option]" size="4" value="" class="form-text required">
                         <span class="field-prefix">多选题</span> 
-                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[multiple_option]" id="edit-option" size="4" value="" class="form-text required">
+                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[multiple_option]" size="4" value="" class="form-text required">
                         <span class="field-prefix">判断题</span> 
-                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[true_false]" id="edit-option" size="4" value="" class="form-text required">
+                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[true_false]" size="4" value="" class="form-text required">
                         <span class="field-prefix">问答题</span> 
-                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[text]" id="edit-option" size="4" value="" class="form-text required">
+                        <input type="text" maxlength="2" name="chapter-<?php echo $key ?>[text]" size="4" value="" class="form-text required text-type">
                     </div>
                 <?php endforeach ?>
             </fieldset>
