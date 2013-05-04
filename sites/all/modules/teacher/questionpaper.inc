@@ -219,12 +219,11 @@ function teacher_all_options(&$form_state){
   
     //试题科目
     $course = $_SESSION['teacher_choice_filter'][0];
-
+    $paper_type = $_SESSION['teacher_choice_filter'][1];
     if($course == '所有'){
-        $result = pager_query("SELECT * FROM {question}", 20, 0, NULL);
-    }
-    else {
-        $result = pager_query("SELECT * FROM {question} where course = '".$course."'", 20, 0, NULL);
+        $result = pager_query("SELECT * FROM {question} where paper_type = '".$paper_type."'", 20, 0, NULL);
+    } else {
+        $result = pager_query("SELECT * FROM {question} where paper_type = '".$paper_type."' and course = '".$course."'", 20, 0, NULL);
     }
     
     $filters = teacher_students_filters();  
@@ -261,6 +260,7 @@ function teacher_all_options(&$form_state){
             $form[$res->id]['type'] = array('#value'=>check_plain($res->type));
             $form[$res->id]['score'] = array('#value'=>check_plain($res->score));
             $form[$res->id]['level'] = array('#value'=>check_plain($res->level));
+            $form[$res->id]['paper_type'] = array('#value'=>check_plain($res->paper_type));
         }
     }
 
@@ -279,7 +279,7 @@ function teacher_all_options(&$form_state){
 }
 
 function theme_teacher_all_options($form){
-    $header = array(t('编号'),t('试题列表'),t('试题类型'),t('分值'),t('难度'));
+    $header = array(t('编号'),t('试题列表'),t('试题类型'),t('分值'),t('难度'),t('试卷类型'));
 
     $rows = array();
     $output = drupal_render($form['options']);
@@ -305,7 +305,7 @@ function theme_teacher_all_options($form){
 
             $row[] = drupal_render($vocabulary['score']);
             $row[] = drupal_render($vocabulary['level']);
-
+            $row[] = drupal_render($vocabulary['paper_type']);
 
             if(isset($vocabulary['weight'])){
                 $vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';

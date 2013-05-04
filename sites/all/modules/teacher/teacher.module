@@ -1197,7 +1197,7 @@ function teacher_choice_filter_form() {
     '#title' => t('只显示指定试题类型'),
     '#theme' => 'teacher_students_filter',
   );
-  
+  //todo:需要重构
   foreach ($filters as $key => $filter) {
     $names[$key] = $filter['title'];
     $form['filters']['status'][$key] = array(
@@ -1206,6 +1206,12 @@ function teacher_choice_filter_form() {
     	'#default_value' => $_SESSION['teacher_choice_filter'][0],
     );
   }
+
+  $form['filters']['status']['paper_type'] = array(
+    '#type' => 'select',
+    '#options' => array('考试题'=>'考试题','练习题'=>'练习题'),
+    '#default_value' => $_SESSION['teacher_choice_filter'][1],
+  );
   
   $form['filters']['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -1219,6 +1225,7 @@ function teacher_choice_filter_form() {
 }
 function teacher_choice_filter_form_submit($form, &$form_state) {
 	$_SESSION['teacher_choice_filter'][0] = $form_state['values']['type'];
+  $_SESSION['teacher_choice_filter'][1] = $form_state['values']['paper_type'];
   return;
 }
 function teacher_topic_filter_form() {
