@@ -196,8 +196,6 @@ function topic_filters(){
 function teacher_text_question_form(&$form_state,$question){
   drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
 
-  krumo::dump($question);
-
   $form = array(
     '#attributes' => array(
       '#title' => 'Topic',
@@ -292,11 +290,13 @@ function teacher_text_question_form(&$form_state,$question){
 //根据课程查找章节
 function get_chapters($course){
   $types = array();
-  $result = db_query('SELECT chapters from {node} where title = \'%s\'',$course);
-    //krumo::dump($course);
+  $result = db_query('SELECT node.nid, chapter.name from {node} left join {chapter} on node.nid=chapter.course_id where node.title = \'%s\'',$course);
   $chapters = array();
-  while($result = db_fetch_object($result)){
-    $chapters = unserialize($result->chapters);
+
+  while($chapter = db_fetch_object($result)){
+    if ($chapter->name) {
+      $chapters[] = $chapter->name;
+    }
   }
   return $chapters;
 }
@@ -319,7 +319,6 @@ function update_question_submit(&$form,&$form_state){
 
     //UPDATE 表名称 SET 列名称 = 新值 WHERE 列名称 = 某值
     //Ex: UPDATE Person SET Address = 'Zhongshan 23', City = 'Nanjing' WHERE LastName = 'Wilson'
-  krumo::dump($id);
   db_query("UPDATE question SET topic = '%s', option_a = '%s', correct = '%d', 
     course = '%s', type = '%s', chapter = '%s', score = %d, level = %d where id = %d",
     $form_state['values']['topic'], 
@@ -859,10 +858,11 @@ function import_question_type_option($data) {
       continue;
     }
 
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
+    $course = getCourseNameById($data->val($row, 1));
+    $chapter = getChapterNameById($data->val($row, 2));
     $score =  2;
     $level = $data->val($row, 13);
+    $paper_type = $data->val($row, 14);
     $correct = $data->val($row, 12);
 
     //序列化数组
@@ -880,9 +880,9 @@ function import_question_type_option($data) {
     //问题类型:
     $type = 'option';
 
-    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d')",
-      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level));
+    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level,paper_type)
+      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d','%s')",
+      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level),$paper_type);
 
     if(db_last_insert_id('question', 'id')) {
       $success += 1;
@@ -916,10 +916,11 @@ function import_question_type_multiple_option($data) {
       continue;
     }
 
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
-    $score =  4;
+    $course = getCourseNameById($data->val($row, 1));
+    $chapter = getChapterNameById($data->val($row, 2));
+    $score =  23;
     $level = $data->val($row, 13);
+    $paper_type = $data->val($row, 14);
     $correct = $data->val($row, 12);
     $score_strategy = $data->val($row, 14);
 
@@ -937,9 +938,9 @@ function import_question_type_multiple_option($data) {
     //问题类型
     $type = 'multiple_option';
 
-    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level,score_strategy)
-      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d','%d')",
-      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level),intval($score_strategy));
+    db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level,score_strategy,paper_type)
+      VALUES(null,'%s','%s','%s','%s','%s','%s','%d','%d','%d','%s')",
+      $topic,$con,$correct,$course,$type,$chapter,intval($score),intval($level),intval($score_strategy),$paper_type);
 
     if(db_last_insert_id('question', 'id')) {
       $success += 1;
@@ -973,18 +974,19 @@ function import_question_type_true_false($data) {
       continue;
     }
 
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
+    $course = getCourseNameById($data->val($row, 1));
+    $chapter = getChapterNameById($data->val($row, 2));
     $score =  2;
     $level = $data->val($row, 5);
+    $paper_type = $data->val($row, 6);
     $correct = $data->val($row, 4);
 
     //问题类型
     $type = 'true_false';
 
-    db_query("INSERT INTO {question} (id,topic,correct,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%s','%d','%d')",
-      $topic,$correct,$course,$type,$chapter,intval($score),intval($level));
+    db_query("INSERT INTO {question} (id,topic,correct,course,type,chapter,score,level,paper_type)
+      VALUES(null,'%s','%s','%s','%s','%s','%d','%d','%s')",
+      $topic,$correct,$course,$type,$chapter,intval($score),intval($level),$paper_type);
 
     if(db_last_insert_id('question', 'id')) {
       $success += 1;
@@ -1018,18 +1020,19 @@ function import_question_type_text($data) {
       continue;
     }
 
-    $course = $data->val($row, 1);
-    $chapter = $data->val($row, 2);
+    $course = getCourseNameById($data->val($row, 1));
+    $chapter = getChapterNameById($data->val($row, 2));
     $score =  10;
     $level = $data->val($row, 4);
+    $paper_type = $data->val($row, 4);
 
 
     //问题类型:option/text
     $type = 'text';
 
-    db_query("INSERT INTO {question} (id,topic,course,type,chapter,score,level)
-      VALUES(null,'%s','%s','%s','%s','%d','%d')",
-      $topic,$course,$type,$chapter,intval($score),intval($level));
+    db_query("INSERT INTO {question} (id,topic,course,type,chapter,score,level,paper_type)
+      VALUES(null,'%s','%s','%s','%s','%d','%d','%s')",
+      $topic,$course,$type,$chapter,intval($score),intval($level),$paper_type );
 
     if(db_last_insert_id('question', 'id')) {
       $success += 1;
@@ -1045,4 +1048,15 @@ function import_question_type_text($data) {
     'fail' => $fail,
     );
   return $result;
+}
+
+function getChapterNameById($id) {
+
+  $ret = db_result(db_query('SELECT name from chapter where id = %d', intval($id)));
+  return $ret;
+}
+
+function getCourseNameById($id) {
+  $ret = db_result(db_query('SELECT title from node where nid = %d', intval($id)));
+  return $ret;
 }

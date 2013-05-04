@@ -12,7 +12,22 @@
         </label>
         <input type="text" maxlength="128" name="title" id="edit-title" size="60" value="" class="form-text required">
     </div>
-
+    <fieldset>
+        <div class="form-radios">
+            <div class="form-item form-radio">
+                <label class="option" for="edit-paper_type-0">
+                    <input type="radio" id="edit-paper_type-0" name="paper_type" value="考试题" checked="checked" class="form-radio"> 
+                    考试题
+                </label>
+            </div>
+            <div class="form-item form-radio">
+                <label class="option" for="edit-paper_type-1">
+                    <input type="radio" id="edit-paper_type-1" name="paper_type" value="练习题"  class="form-radio"> 
+                    练习题
+                </label>
+            </div>
+        </div>
+    </fieldset>
     <fieldset id="class-option">
         <legend>班级：</legend>
         <?php foreach ($params['classes'] as $key => $value): ?>
