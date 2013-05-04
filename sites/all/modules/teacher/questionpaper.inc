@@ -63,6 +63,7 @@ function teacher_add_auto_questionpaper_submit($post){
   $paperParams = array();
   $paperParams['course'] = $post['course'];
   $paperParams['chapterCount'] = $post['chapterCount'];
+  $paperParams['paper_type'] = $post['paper_type'];
   
   $paperParams['chapters'] = array();
 
@@ -153,7 +154,8 @@ function generateQuestionPaper($params)
     //通过章节id查询章节名称
     $chapters = get_chapters($params['course']);
     $chapterQuery = $chapters[$key];
-    $result = db_query('SELECT * FROM {question} WHERE course = "%s" AND chapter = "%s"', $params['course'], $chapterQuery);
+    krumo::dump($params['paper_type']);
+    $result = db_query('SELECT * FROM {question} WHERE course = "%s" AND chapter = "%s" AND paper_type = "%s"', $params['course'], $chapterQuery, $params['paper_type']);
     
     while($question = db_fetch_object($result)) {
       $questions[] = $question;
