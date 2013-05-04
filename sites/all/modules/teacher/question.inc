@@ -2,12 +2,8 @@
 
 function teacher_question_manage(){
   $output = '';
-  //$output .= l("添加问答题","teacher/question/add/text")."<br/>";
-  //$output .= l("添加选择题","teacher/question/add/option")."<br/>";
-
   $output .= drupal_get_form('teacher_question_filter_form');
   $output .= drupal_get_form('teacher_question_list');
-    //var_dump($x);
   return $output;
 }
 
@@ -17,8 +13,8 @@ function question_filter_form_submit(&$form,&$form_state){
 }
 
 function theme_teacher_question_list($form){
-    //生成表头结构
-    //试题编号:试题内容:试题类型:试题所属课程:试题所属章节:试题分值:试题难度等级
+  //生成表头结构
+  //试题编号:试题内容:试题类型:试题所属课程:试题所属章节:试题分值:试题难度等级
   $header = array(
     array('data' => t('试题编号'), 'field' => 'id', 'sort' => 'asc'),
     array('data' => t('试题内容'), 'field' => 'topic', 'sort' => 'asc'),
@@ -27,7 +23,8 @@ function theme_teacher_question_list($form){
     array('data' => t('试题所属章节'), 'field' => 'chapter', 'sort' => 'asc'),
     array('data' => t('试题分值'), 'field' => 'score', 'sort' => 'asc'),
     array('data' => t('试题难度等级'), 'field' => 'level', 'sort' => 'asc'),
-    );
+    array('data' => t('试题试卷类型'), 'field' => 'paper_type', 'sort' => 'asc'),
+  );
 
   $rows = array();
     // $output = drupal_render($form['options']);
@@ -54,6 +51,7 @@ function theme_teacher_question_list($form){
         $row [] = drupal_render($form['chapter'][$key]);
         $row [] = drupal_render($form['score'][$key]);
         $row [] = drupal_render($form['level'][$key]);
+        $row [] = drupal_render($form['paper_type'][$key]);
         $row [] = drupal_render($form['edit'][$key]);
         $row [] = drupal_render($form['remove'][$key]);
 
@@ -123,6 +121,7 @@ function teacher_question_list() {
     $form['chapter'][$question->id] = array('#value' => $question->chapter);
     $form['score'][$question->id] = array('#value' => $question->score);
     $form['level'][$question->id] = array('#value' => $question->level);
+    $form['paper_type'][$question->id] = array('#value' => $question->paper_type);
         //teacher/question/edit/%
     $form['edit'][$question->id] = array('#value' => l(t('edit'), 'teacher/question/edit/'.$question->id, array('query' => $destination)));
         //teacher/question/remove/%
@@ -251,7 +250,13 @@ function teacher_text_question_form(&$form_state,$question){
       '#default_value' => $question->chapter,
       );
   }
-
+    //试题类型:考试题 or 练习题
+  $form['paper_type'] = array(
+    '#title' => '试题类型',
+    '#type' => 'select',
+    '#options' => array('考试题'=>'考试题','练习题'=>'练习题'),
+    '#default_value' => $question->paper_type,
+  );
     //score
   $form['score'] = array(
     '#title' => '分值',
@@ -398,8 +403,8 @@ function question_edit($id) {
     $output = drupal_get_form('teacher_text_question_form',$question);
     
   } elseif ($question->type == "option") {
-        //跳转至选择题页面
-        //todo:
+    //跳转至选择题页面
+    krumo::dump($question);
     $output = drupal_get_form('teacher_option_question_form',$question);
   } elseif ($question->type == "multiple_option") {
     $output = drupal_get_form('teacher_multiple_option_question_form',$question);
@@ -456,6 +461,13 @@ function teacher_multiple_option_question_form(&$form_state,$question){
             '#default_value' => $question->chapter,
         );
     }
+        //试题类型:考试题 or 练习题
+  $form['paper_type'] = array(
+    '#title' => '试题类型',
+    '#type' => 'select',
+    '#options' => array('考试题'=>'考试题','练习题'=>'练习题'),
+    '#default_value' => $question->paper_type,
+  );
     //score
     $form['score'] = array(
         '#title' => '分值',
@@ -536,6 +548,13 @@ function teacher_true_false_question_form(&$form_state,$question){
             '#default_value' => $question->chapter,
         );
     }
+    //试题类型:考试题 or 练习题
+    $form['paper_type'] = array(
+      '#title' => '试题类型',
+      '#type' => 'select',
+      '#options' => array('考试题'=>'考试题','练习题'=>'练习题'),
+      '#default_value' => $question->paper_type,
+    );
     //score
     $form['score'] = array(
         '#title' => '分值',
@@ -622,6 +641,14 @@ function teacher_option_question_form(&$form_state,$question){
     '#type' => 'fieldset',
     '#attributes' => array('id' => 'chapters'),
     );
+    krumo::dump($question->paper_type);
+    //试题类型:考试题 or 练习题
+  $form['paper_type'] = array(
+    '#title' => '试题类型',
+    '#type' => 'select',
+    '#options' => array('考试题'=>'考试题','练习题'=>'练习题'),
+    '#default_value' => $question->paper_type,
+  );
   foreach ($courses as $key => $course) {
     $chapters = get_chapters($course);
     $form['chapter'][$course] = array(
