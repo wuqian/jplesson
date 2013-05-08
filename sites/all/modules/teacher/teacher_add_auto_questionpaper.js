@@ -11,7 +11,7 @@ $(document).ready(function(){
     });
 
     
-    $('#settingsInput .types-settings input').blur(sumScore);
+    $('.types-settings input').blur(sumScore);
 
 });
 

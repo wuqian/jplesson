@@ -808,9 +808,14 @@ function import_questions_form() {
     '#type' => 'submit',
     '#value' => t('导入'),
     );
-
-  $form['format_example'] = array(
-    '#value' => l('下载题库格式示例', file_directory_path() . '/question_format_example.xls')
+  $form['example'] = array(
+    '#type' => 'fieldset',
+    );
+  $form['example']['format_example'] = array(
+    '#value' => l('下载题库格式示例', file_directory_path() . '/question_format_example.xls') . '<br/>'
+    );
+  $form['example']['chapter_index'] = array(
+    '#value' => l('章节ID列表', file_directory_path() . '/jplessonindex.html')
     );
   return $form;
 }
