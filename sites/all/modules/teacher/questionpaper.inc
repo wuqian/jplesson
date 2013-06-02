@@ -207,12 +207,13 @@ function testInsert($chapter, $question) {
 function teacher_add_manually_questionpaper()
 {
     drupal_add_css(drupal_get_path('module', 'teacher') .'/add_manually_questionpaper.css', 'module', 'all', FALSE);
+    drupal_add_js(drupal_get_path('module', 'teacher') .'/add_manually_questionpaper.js','file');
     $output = drupal_get_form('teacher_choice_filter_form');
-    $output .= drupal_get_form('teacher_all_options');
+    $output .= drupal_get_form('teacher_manually_questionpaper_form');
     return $output;
 }
 
-function teacher_all_options(&$form_state){
+function teacher_manually_questionpaper_form(&$form_state){
     drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
     $form = array();
     $form = array(
@@ -280,7 +281,7 @@ function teacher_all_options(&$form_state){
     return $form;
 }
 
-function theme_teacher_all_options($form){
+function theme_teacher_manually_questionpaper_form($form){
     $header = array(t('编号'),t('试题列表'),t('试题类型'),t('分值'),t('难度'),t('试卷类型'));
 
     $rows = array();
@@ -317,7 +318,7 @@ function theme_teacher_all_options($form){
         }
     }
     if(empty($rows)){
-        $rows = array(array('data'=>t('No vocalable'),'colspan'=>2));
+        $rows = array(array('data'=>t('没有试题'),'colspan'=>2));
     }
     
     $output .= theme('table',$header,$rows,array('id'=>'teacher-options-list')).drupal_render($form);
@@ -328,7 +329,6 @@ function theme_teacher_all_options($form){
  * 点击生成手工试卷
  */
 function teacher_questionpaper_submit(&$form,&$form_state){
-
     $class_id_list = $form_state['values']['options']['available_class_id'];
     $selected_class = array();
     foreach ($class_id_list as $class_id => $select) {
@@ -361,8 +361,15 @@ function teacher_questionpaper_submit(&$form,&$form_state){
         }
     }
 
-    db_query("insert into {questionpaper} (class_id,questions,title)
+    $query = db_query("insert into {questionpaper} (class_id,questions,title)
             values ('%s','%s','%s')",$selected_class,serialize($questions),$title);
+    if($query) {
+      drupal_set_message('试卷生成成功！');
+      $form_state['redirect'] = 'teacher/questionpaper/manage';
+    } else {
+      drupal_set_message('试卷生成失败，请检查输入项。');
+    }
+    
 }
 
 /*
