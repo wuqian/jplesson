@@ -711,7 +711,7 @@ function theme_student_examination_list($form){
 /*
  * Generating examination paper;
  */
-function student_all(&$form_state, $questionpaper_id){
+function student_all(&$form_state, $questionpaper_id) {
 	$form = array();
 
     $form['questionpaper_id'] = array(
@@ -726,11 +726,30 @@ function student_all(&$form_state, $questionpaper_id){
     //从数据库中获取question的详细信息
     $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
 
+    //分组标题打印flag
+    $flags['text'] = 0;
+    $flags['option'] = 0;
+    $flags['true_false'] = 0;
+    $flags['multiple_option'] = 0;
     //将题目输出到表单
     $index = 1;
+                if ($flags['text'] == 0) {
+              $flags['text'] = 1;
+              $form['hello'] = array(
+                '#type' => 'item',
+                '#title' => '选择题'
+              );
+            }
     while($question = db_fetch_object($result)){
         //为题目创建form:(区分选择题＆问答题)
         if ($question->type == 'text') {
+            if ($flags['text'] == 0) {
+              $flags['text'] = 1;
+              $form['text'] = array(
+                '#type' => 'item',
+                '#title' => '问答题'
+              );
+            }
             //问答题
             //krumo::dump("text");
             $form[$question->id][$question->id] = array(
@@ -738,6 +757,13 @@ function student_all(&$form_state, $questionpaper_id){
                 '#title' => $index.'.'.$question->topic,
             );
         } elseif ($question->type == 'option') {
+            if ($flags['option'] == 0) {
+              $flags['option'] = 1;
+              $form['option'] = array(
+                '#type' => 'item',
+                '#title' => '选择题'
+              );
+            }
             //选择题
             $form[$question->id][$question->id.'topic'] = array(
                 '#type' => 'item',
@@ -750,6 +776,13 @@ function student_all(&$form_state, $questionpaper_id){
                 '#options' => $arr,
             );
         } elseif ($question->type == 'true_false') {
+            if ($flags['true_false'] == 0) {
+              $flags['true_false'] = 1;
+              $form['true_false'] = array(
+                '#type' => 'item',
+                '#title' => '判断题'
+              );
+            }
             $form[$question->id][$question->id.'topic'] = array(
                 '#type' => 'item',
                 '#title' => $index.'.'.$question->topic,
@@ -759,6 +792,13 @@ function student_all(&$form_state, $questionpaper_id){
                 '#options' => array("错误","正确"),
             );
         } elseif ($question->type == 'multiple_option') {
+            if ($flags['multiple_option'] == 0) {
+              $flags['multiple_option'] = 1;
+              $form['multiple_option'] = array(
+                '#type' => 'item',
+                '#title' => '多选题'
+              );
+            }
             $form[$question->id][$question->id.'topic'] = array(
                 '#type' => 'item',
                 '#title' => $index.'.'.$question->topic,
