@@ -7,9 +7,9 @@
     <?php print $head ?>
     <title><?php print $head_title ?></title>
     <?php print $styles ?>
-    <script src="<?php echo $base_path; ?>/misc/jquery.js" type="text/javascript"></script>
     <?php print $scripts ?>
-    <script src="<?php echo $base_path; ?>/misc/liHover.js" type="text/javascript"></script>
+    <script src="<?php echo $base_path; ?>misc/jquery-migrate-1.2.1.min.js" type="text/javascript"></script>
+    <script src="<?php echo $base_path; ?>misc/liHover.js" type="text/javascript"></script>
     <!--[if lt IE 7]>
       <?php print phptemplate_get_ie_styles(); ?>
     <![endif]-->
