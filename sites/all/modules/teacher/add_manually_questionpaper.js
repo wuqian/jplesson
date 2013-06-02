@@ -15,11 +15,21 @@ $(function function_name(argument) {
         return false;
     });
 
-
+    //点击checkbox，更新试题列表
     $('#teacher-options-list').delegate('.form-checkbox .option input', 'click', function() {
 
         var questionId = parseInt($(this).attr('name'));
-        questionList[questionId] = $(this).is(':checked');
+
+        if(typeof questionList[questionId] === 'undefined') {
+            questionList[questionId] = {};
+        }
+
+        questionList[questionId]['checked'] = $(this).is(':checked');
+        questionList[questionId]['score'] = 2;
+
+        //求总分
+        var totalScore = sumScore(questionList);
+        $('#total-score').html(totalScore);
     });
 
 });
@@ -41,7 +51,7 @@ function updateFormWithQuestionList(questionList) {
     $('#add-input').html('');
     $.each(questionList, function(index, value) {
 
-        if (value === true) {
+        if (value.checked === true) {
 
             var dom = $('#edit-' + index + '-id');
 
@@ -57,4 +67,21 @@ function updateFormWithQuestionList(questionList) {
 
     });
 
+}
+
+/**
+ * 求所选试题总分
+ */
+function sumScore(questionList) {
+
+    var sum = 0;
+
+
+    $.each(questionList, function(index, value) {
+        if (value.checked === true) {
+            sum += 2;
+        }
+    });
+
+    return sum;
 }
