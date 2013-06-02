@@ -226,8 +226,9 @@ function teacher_text_question_form(&$form_state,$question){
     );
     //krumo::dump($question->course);
     //课程选项
-  $filter = teacher_students_type_filters();
-  $courses = $filter['type']['options'];
+  //$filter = teacher_students_type_filters();
+  //$courses = $filter['type']['options'];
+  $courses = getCoursesOptionList();
   $form['course'] = array(
     '#title' => '课程',
     '#type' => 'select',
@@ -313,23 +314,25 @@ function get_chapters($course){
 //更新问题接口
 function update_question_submit(&$form,&$form_state){
   $course = $_POST['course'];
-  $chapter = $_POST[$course];
+  $chapter_index = $_POST[$course];
   $score =  $_POST['score'];
   $level = $_POST['level'];
   $id = $form_state['values']['id'];
   $type = $form_state['values']['type'];
-  //$image = $form_state['values']['upload'];
 
   $dest = file_directory_path() . '/upload';
   $file = file_save_upload('upload', array(), $dest);
-  krumo::dump($file);
-  // if(!$file) {
-  //   drupal_set_message('导入失败，请检查文件格式', 'error');
-  //   return;
-  // }
+  
+  if ($file) {
+    $filepath = $file->filepath;
+  } else {
+    $filepath = NULL;
+  }
 
-  //drupal_set_message(t('The form has been submitted.'));
-  krumo::dump($path);
+  $chapters = get_chapters($course);
+  $chapter = $chapters[$chapter_index];
+
+  krumo::dump($_POST);
 
   $a = $form_state['values']['option_A'];
   $b = $form_state['values']['option_B'];
@@ -340,7 +343,7 @@ function update_question_submit(&$form,&$form_state){
 
     //UPDATE 表名称 SET 列名称 = 新值 WHERE 列名称 = 某值
     //Ex: UPDATE Person SET Address = 'Zhongshan 23', City = 'Nanjing' WHERE LastName = 'Wilson'
-  db_query("UPDATE question SET topic = '%s', option_a = '%s', correct = '%d', 
+  $ret = db_query("UPDATE question SET topic = '%s', option_a = '%s', correct = '%d', 
     course = '%s', type = '%s', chapter = '%s', score = %d, level = %d, image = '%s' where id = %d",
     $form_state['values']['topic'],
     $con,
@@ -354,7 +357,7 @@ function update_question_submit(&$form,&$form_state){
     intval($id)
     );
 
-  if(db_last_insert_id('question', 'id')){
+  if($ret){
     drupal_set_message('Successful input');
   }else {
     drupal_set_message('Input failure','error');
@@ -370,7 +373,7 @@ function add_question_submit(&$form,&$form_state){
   $score =  $_POST['score'];
   $level = $_POST['level'];
 
-    //序列化数组
+  //序列化数组
   $a = $form_state['values']['option_A'];
   $b = $form_state['values']['option_B'];
   $c = $form_state['values']['option_C'];
@@ -415,7 +418,7 @@ function question_edit($id) {
   if ($question->type == "text") {
         //跳转至问答题页面
         //todo:将result的结果传递给 teacher_text_question_form 
-    krumo::dump($question);
+    //krumo::dump($question);
     $output = drupal_get_form('teacher_text_question_form',$question);
     
   } elseif ($question->type == "option") {
@@ -450,6 +453,7 @@ function teacher_multiple_option_question_form(&$form_state,$question) {
     //课程选项
     $filter = teacher_students_type_filters();
     $courses = $filter['type']['options'];
+    $courses = getCoursesOptionList();
     $form['course'] = array(
         '#title' => '课程',
         '#type' => 'select',
