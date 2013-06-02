@@ -219,7 +219,11 @@ function teacher_text_question_form(&$form_state,$question){
     '#required' => true,
     '#default_value' => $question->topic,
     );
-
+  $form['upload'] = array(
+    '#type' => 'file',
+    '#title' => t('选择要导入的试题图片'),
+    '#size' => 40,
+    );
     //krumo::dump($question->course);
     //课程选项
   $filter = teacher_students_type_filters();
@@ -319,10 +323,10 @@ function update_question_submit(&$form,&$form_state){
   $dest = file_directory_path() . '/upload';
   $file = file_save_upload('upload', array(), $dest);
   krumo::dump($file);
-  if(!$file) {
-    drupal_set_message('导入失败，请检查文件格式', 'error');
-    return;
-  }
+  // if(!$file) {
+  //   drupal_set_message('导入失败，请检查文件格式', 'error');
+  //   return;
+  // }
 
   //drupal_set_message(t('The form has been submitted.'));
   krumo::dump($path);
@@ -497,7 +501,11 @@ function teacher_multiple_option_question_form(&$form_state,$question) {
         '#required' => true,
         '#default_value' => $question->topic,
     );
-
+    $form['upload'] = array(
+    '#type' => 'file',
+    '#title' => t('选择要导入的试题图片'),
+    '#size' => 40,
+    );
     $form['options'] = array();
 
     //答案部分
@@ -584,7 +592,11 @@ function teacher_true_false_question_form(&$form_state,$question){
         '#required' => true,
         '#default_value' => $question->topic,
     );
-
+    $form['upload'] = array(
+    '#type' => 'file',
+    '#title' => t('选择要导入的试题图片'),
+    '#size' => 40,
+    );
     //答案部分
     //$question->correct: 0:错误, 1:正确
     $form['radios'] = array(
