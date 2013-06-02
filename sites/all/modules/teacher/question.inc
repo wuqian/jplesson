@@ -314,6 +314,18 @@ function update_question_submit(&$form,&$form_state){
   $level = $_POST['level'];
   $id = $form_state['values']['id'];
   $type = $form_state['values']['type'];
+  //$image = $form_state['values']['upload'];
+
+  $dest = file_directory_path() . '/upload';
+  $file = file_save_upload('upload', array(), $dest);
+  krumo::dump($file);
+  if(!$file) {
+    drupal_set_message('导入失败，请检查文件格式', 'error');
+    return;
+  }
+
+  //drupal_set_message(t('The form has been submitted.'));
+  krumo::dump($path);
 
   $a = $form_state['values']['option_A'];
   $b = $form_state['values']['option_B'];
@@ -325,15 +337,16 @@ function update_question_submit(&$form,&$form_state){
     //UPDATE 表名称 SET 列名称 = 新值 WHERE 列名称 = 某值
     //Ex: UPDATE Person SET Address = 'Zhongshan 23', City = 'Nanjing' WHERE LastName = 'Wilson'
   db_query("UPDATE question SET topic = '%s', option_a = '%s', correct = '%d', 
-    course = '%s', type = '%s', chapter = '%s', score = %d, level = %d where id = %d",
-    $form_state['values']['topic'], 
-    $con, 
-    $_POST['radios'], 
+    course = '%s', type = '%s', chapter = '%s', score = %d, level = %d, image = '%s' where id = %d",
+    $form_state['values']['topic'],
+    $con,
+    $_POST['radios'],
     $course,
     $type,
     $chapter,
     intval($score),
     intval($level),
+    $file->filepath,
     intval($id)
     );
 
@@ -414,13 +427,8 @@ function question_edit($id) {
   }
   return $output;
 }
-/**
- * [teacher_multiple_option_question_form 判断题录入]
- * @param  [type] $form_state [description]
- * @param  [type] $question   [description]
- * @return [type]             [description]
- */
-function teacher_multiple_option_question_form(&$form_state,$question){
+
+function teacher_multiple_option_question_form(&$form_state,$question) {
         //drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
     drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
     $form = array(
@@ -610,9 +618,9 @@ function teacher_true_false_question_form(&$form_state,$question){
 function teacher_option_question_form(&$form_state,$question){
   drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
   drupal_add_js('sites/all/modules/teacher/teacher_add_text_question.js','file');
-  
   $form = array(
-    '#attributes' => array('class' => 'teacher-form'),
+    '#attributes' => array('class' => 'teacher-form',
+                          'enctype' => "multipart/form-data"),
     );
   $form['type'] = array(
     '#type' => 'value',
@@ -640,7 +648,6 @@ function teacher_option_question_form(&$form_state,$question){
     '#type' => 'fieldset',
     '#attributes' => array('id' => 'chapters'),
     );
-    krumo::dump($question->paper_type);
     //试题类型:考试题 or 练习题
   $form['paper_type'] = array(
     '#title' => '试题类型',
@@ -683,6 +690,12 @@ function teacher_option_question_form(&$form_state,$question){
     '#default_value' => $question->topic,
     );
 
+  ## To add the element to the form
+  $form['upload'] = array(
+    '#type' => 'file',
+    '#title' => t('选择要导入的试题图片'),
+    '#size' => 40,
+    );
     //选项 需要对question['option_a']进行反序列化操作
   $options = unserialize($question->option_a);
 
