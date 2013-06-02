@@ -251,6 +251,11 @@ function teacher_manually_questionpaper_form(&$form_state){
         );
     }
 
+    $form['totalscore'] = array(
+      '#type' => 'fieldset',
+      '#value' => '已选择试题总分合计： <span id="total-score"></span>',
+      );
+
     while($term = db_fetch_object($result)){
         $results[] = $term;
     }
