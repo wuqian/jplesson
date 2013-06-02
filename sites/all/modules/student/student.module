@@ -745,10 +745,21 @@ function student_all(&$form_state, $questionpaper_id) {
             }
             //问答题
             //krumo::dump("text");
-            $form[$question->id][$question->id] = array(
-                '#type' => 'textarea',
+            $form[$question->id][$question->id.'topic'] = array(
+                '#type' => 'item',
                 '#title' => $index.'.'.$question->topic,
             );
+            if ($question->image) {
+              global $base_url;
+              $form[$question->id]['image'] = array(
+                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+              );
+            }
+            $form[$question->id][$question->id] = array(
+                '#type' => 'textarea',
+                //'#title' => $index.'.'.$question->topic,
+            );
+
         } elseif ($question->type == 'option') {
             if ($flags['option'] == 0) {
               $flags['option'] = 1;
@@ -763,6 +774,12 @@ function student_all(&$form_state, $questionpaper_id) {
                 //'#default_value' => '1',
                 '#title' => $index.'.'.$question->topic,
             );
+            if ($question->image) {
+              global $base_url;
+              $form[$question->id]['image'] = array(
+                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+              );
+            }
             $arr = unserialize($question->option_a);
             $form[$question->id][$question->id] = array(
                 '#type' => 'radios',
@@ -780,6 +797,12 @@ function student_all(&$form_state, $questionpaper_id) {
                 '#type' => 'item',
                 '#title' => $index.'.'.$question->topic,
             );
+            if ($question->image) {
+              global $base_url;
+              $form[$question->id]['image'] = array(
+                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+              );
+            }
             $form[$question->id][$question->id] = array(
                 '#type' => 'radios',
                 '#options' => array("错误","正确"),
@@ -796,6 +819,12 @@ function student_all(&$form_state, $questionpaper_id) {
                 '#type' => 'item',
                 '#title' => $index.'.'.$question->topic,
             );
+            if ($question->image) {
+              global $base_url;
+              $form[$question->id]['image'] = array(
+                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+              );
+            }
             $options = unserialize($question->option_a);
             foreach ($options as $key=>$option) {
                 $form[$question->id][$question->id.'-'.$key] = array(
