@@ -733,13 +733,6 @@ function student_all(&$form_state, $questionpaper_id) {
     $flags['multiple_option'] = 0;
     //将题目输出到表单
     $index = 1;
-                if ($flags['text'] == 0) {
-              $flags['text'] = 1;
-              $form['hello'] = array(
-                '#type' => 'item',
-                '#title' => '选择题'
-              );
-            }
     while($question = db_fetch_object($result)){
         //为题目创建form:(区分选择题＆问答题)
         if ($question->type == 'text') {
