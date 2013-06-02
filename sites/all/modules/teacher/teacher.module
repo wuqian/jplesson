@@ -13,7 +13,7 @@ require_once('question.inc');
 require_once('questionpaper.inc');
 
 // 不知道干什么用的
-// function teacher_all_options_submit(){
+// function teacher_manually_questionpaper_form_submit(){
 //     foreach($form_state['values'] as $id => $vocabulary){
 //         if(is_numeric($id) && $form[$id]['#vocabulary']['weight'] != $form_state['values'][$id]['weight']){
 //             $form[$id]['#vocabulary']['weight'] = $form_state['values'][$id]['weight'];
@@ -49,7 +49,7 @@ function teacher_theme() {
 		'teacher_question_list' => array(
 			'arguments' => array('form' => array()),
 		),
-		'teacher_all_options' => array(
+		'teacher_manually_questionpaper_form' => array(
 			'arguments' => array('form' => array()),
 		),
     'add_auto_questionpaper' => array(
