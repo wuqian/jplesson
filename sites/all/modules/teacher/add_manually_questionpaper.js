@@ -2,20 +2,19 @@ $(function function_name(argument) {
 
     var questionList = {};
 
-    $('#teacher-manually-questionpaper-form').append('<div id="add-input"></div>')
-
+    //插入div用来装载隐藏input项
+    $('#teacher-manually-questionpaper-form').append('<div id="add-input"></div>');
 
     //点击Pager进行ajax翻页
     $('#teacher-manually-questionpaper-form').delegate('.pager a', 'click', function() {
 
         var pagerUrl = $(this).attr('href');
-
         getListFromPage(pagerUrl, questionList);
 
         return false;
     });
 
-    //点击checkbox，更新试题列表
+    //点击checkbox，更新试题list
     $('#teacher-options-list').delegate('.form-checkbox .option input', 'click', function() {
 
         var questionId = parseInt($(this).attr('name'));
@@ -24,8 +23,16 @@ $(function function_name(argument) {
             questionList[questionId] = {};
         }
 
+        //更新试题list选中状态
         questionList[questionId]['checked'] = $(this).is(':checked');
-        questionList[questionId]['score'] = 2;
+
+        //获取点击试题分数
+        var row = $(this).closest('tr');
+        var score = row.children('td:nth-child(4)').html();
+        score = parseInt(score);
+        
+        questionList[questionId]['score'] = score;
+
 
         //求总分
         var totalScore = sumScore(questionList);
@@ -34,11 +41,11 @@ $(function function_name(argument) {
 
 });
 
-
+//ajax载入试题列表和pager
 function getListFromPage(pagerUrl, questionList) {
 
     $('#teacher-options-list tbody').load(pagerUrl + ' #teacher-options-list tbody tr', function() {
-        //更新题目选定状态
+        //翻页后根据questionList更新试题checkbox选中状态，并添加隐藏input
         updateFormWithQuestionList(questionList);
     });
 
@@ -46,12 +53,13 @@ function getListFromPage(pagerUrl, questionList) {
     
 }
 
+//根据questionList更新试题checkbox选中状态，并添加隐藏input
 function updateFormWithQuestionList(questionList) {
 
     $('#add-input').html('');
-    $.each(questionList, function(index, value) {
+    $.each(questionList, function(index, question) {
 
-        if (value.checked === true) {
+        if (question.checked === true) {
 
             var dom = $('#edit-' + index + '-id');
 
@@ -76,10 +84,9 @@ function sumScore(questionList) {
 
     var sum = 0;
 
-
-    $.each(questionList, function(index, value) {
-        if (value.checked === true) {
-            sum += 2;
+    $.each(questionList, function(index, question) {
+        if (question.checked === true) {
+            sum += question.score;
         }
     });
 
