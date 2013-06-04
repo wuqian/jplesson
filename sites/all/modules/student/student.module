@@ -627,36 +627,37 @@ function student_cisco_bind_submit($form, &$form_state) {
 		foreach($results as $res){
 			$form[$res->pid]['#config'] = (array)$res;
 			$form[$res->pid]['pid'] = array('#value' => check_plain($res->title));
+      $form[$res->pid]['timelimit'] = array('#value' => check_plain($res->timelimit));
       $class_id = implode(',', unserialize($res->class_id));
-			$form[$res->pid]['class_id'] = array('#value' => $class_id);
+			// $form[$res->pid]['class_id'] = array('#value' => $class_id);
 
-            //根据questionpaper_id,student_id 查找答题记录
-            $questionpaper_id = $res->pid;
-            $answer_resutls = pager_query("SELECT * FROM {answer} WHERE student_id = $student_id AND questionpaper_id = $questionpaper_id", 20, 0, NULL);
-            $answer = NULL;
-            while($tmp = db_fetch_object($answer_resutls)){
-                $answer = $tmp;
-            }
+      //根据questionpaper_id,student_id 查找答题记录
+      $questionpaper_id = $res->pid;
+      $answer_resutls = pager_query("SELECT * FROM {answer} WHERE student_id = $student_id AND questionpaper_id = $questionpaper_id", 20, 0, NULL);
+      $answer = NULL;
+      while($tmp = db_fetch_object($answer_resutls)){
+          $answer = $tmp;
+      }
 
-            if (!$answer != NULL) {
-                //如果answers(student_id,questionpaper_id)不存在,显示 答题
-                $form[$res->pid]['check'] = array('#value' => l(t('答题'),"student/paper/list/".$res->pid));
-            } elseif ($answer->stat == 1) {
-                //如果已经判卷未完成,显示　判卷中
-                $form[$res->pid]['check'] = array('#value' => check_plain('判卷中'));
-            } elseif ($answer->stat == 2) {
-                //如果已经判卷未完成,显示　已完成
-                $form[$res->pid]['check'] = array('#value' => check_plain('已完成'));
-            }
+      if (!$answer != NULL) {
+          //如果answers(student_id,questionpaper_id)不存在,显示 答题
+          $form[$res->pid]['check'] = array('#value' => l(t('答题'),"student/paper/list/".$res->pid));
+      } elseif ($answer->stat == 1) {
+          //如果已经判卷未完成,显示　判卷中
+          $form[$res->pid]['check'] = array('#value' => check_plain('判卷中'));
+      } elseif ($answer->stat == 2) {
+          //如果已经判卷未完成,显示　已完成
+          $form[$res->pid]['check'] = array('#value' => check_plain('已完成'));
+      }
 
-            //krumo::dump($answer);
-            //如果已经判卷完成,显示　考分查看结果
-            if ($answer != NULL && $answer->stat == 2) {
-                $form[$res->pid]['score'] = array('#value' => check_plain($answer->score));
-                //krumo::dump($answer);
-            } else {
-                $form[$res->pid]['score'] = array('#value' => '');
-            }
+      //krumo::dump($answer);
+      //如果已经判卷完成,显示　考分查看结果
+      if ($answer != NULL && $answer->stat == 2) {
+          $form[$res->pid]['score'] = array('#value' => check_plain($answer->score));
+          //krumo::dump($answer);
+      } else {
+          $form[$res->pid]['score'] = array('#value' => '');
+      }
 		}
 	} else {
 		$form['empty'] = array('#type' => 'markup', '#value' => "没有试卷");
@@ -686,9 +687,9 @@ function theme_student_examination_list($form){
 			
 			$row = array();
 			$row[] = drupal_render($vocabulary['pid']);
-			$row[] = drupal_render($vocabulary['class_id']);
+			$row[] = drupal_render($vocabulary['timelimit']);
 			$row[] = drupal_render($vocabulary['check']);
-            $row[] = drupal_render($vocabulary['score']);
+      $row[] = drupal_render($vocabulary['score']);
 
 			if(isset($vocabulary['weight'])){
 				$vocabulary['weight']['#attributes']['class'] = 'vocabulary-weight';
@@ -700,7 +701,7 @@ function theme_student_examination_list($form){
 	if(empty($rows)){
 		$rows = array(array('data' => t('No vocabulary'),'colspan' => 2));
 	}
-	$header = array(t('试卷列表'),t('班级'),t('编辑'),t('考分'));
+	$header = array(t('试卷列表'),t('时间限制(分钟)'),t('编辑'),t('考分'));
 	if(isset($form['submit'])){
 		$header[] = t('weight');
 		drupal_add_tabledrag('taxonomy','order','sibling','vocabulary-weight'); 
@@ -712,141 +713,148 @@ function theme_student_examination_list($form){
  * Generating examination paper;
  */
 function student_all(&$form_state, $questionpaper_id) {
-	$form = array();
+  drupal_add_js(drupal_get_path('module', 'student') .'/answer_paper.js','file');
+  $form = array();
 
-    $form['questionpaper_id'] = array(
-        '#type' => 'value',
-        '#value' => $questionpaper_id
+  $timelimit = db_result(db_query("SELECT timelimit FROM {questionpaper} WHERE pid=$questionpaper_id"));
+  $form['timelimit_field'] = array(
+    '#type' => 'fieldset', 
+    );
+  $form['timelimit_field']['timelimit'] = array(
+    '#value' => '时间限制: <span id="timelimit">' . $timelimit . '</span>分钟',
+  );
+
+  $form['questionpaper_id'] = array(
+    '#type' => 'value',
+    '#value' => $questionpaper_id
     );
 
-	$questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$questionpaper_id"));
-	$questions = unserialize($questions);
+  $questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$questionpaper_id"));
+  $questions = unserialize($questions);
 
-    
-    //从数据库中获取question的详细信息
-    $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
 
-    //分组标题打印flag
-    $flags['text'] = 0;
-    $flags['option'] = 0;
-    $flags['true_false'] = 0;
-    $flags['multiple_option'] = 0;
-    //将题目输出到表单
-    $index = 1;
-    while($question = db_fetch_object($result)){
-        //为题目创建form:(区分选择题＆问答题)
-        if ($question->type == 'text') {
-            if ($flags['text'] == 0) {
-              $flags['text'] = 1;
-              $form['text'] = array(
-                '#type' => 'item',
-                '#title' => '问答题'
-              );
-            }
-            //问答题
-            //krumo::dump("text");
-            $form[$question->id][$question->id.'topic'] = array(
-                '#type' => 'item',
-                '#title' => $index.'.'.$question->topic,
-            );
-            if ($question->image) {
-              global $base_url;
-              $form[$question->id]['image'] = array(
-                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
-              );
-            }
-            $form[$question->id][$question->id] = array(
-                '#type' => 'textarea',
-                //'#title' => $index.'.'.$question->topic,
-            );
+  //从数据库中获取question的详细信息
+  $result = db_query('SELECT * FROM {question} WHERE id IN (%s) ORDER BY type ASC', implode(",", $questions));
 
-        } elseif ($question->type == 'option') {
-            if ($flags['option'] == 0) {
-              $flags['option'] = 1;
-              $form['option'] = array(
-                '#type' => 'item',
-                '#title' => '选择题'
-              );
-            }
-            //选择题
-            $form[$question->id][$question->id.'topic'] = array(
-                '#type' => 'item',
-                //'#default_value' => '1',
-                '#title' => $index.'.'.$question->topic,
-            );
-            if ($question->image) {
-              global $base_url;
-              $form[$question->id]['image'] = array(
-                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
-              );
-            }
-            $arr = unserialize($question->option_a);
-            $form[$question->id][$question->id] = array(
-                '#type' => 'radios',
-                '#options' => $arr,
-            );
-        } elseif ($question->type == 'true_false') {
-            if ($flags['true_false'] == 0) {
-              $flags['true_false'] = 1;
-              $form['true_false'] = array(
-                '#type' => 'item',
-                '#title' => '判断题'
-              );
-            }
-            $form[$question->id][$question->id.'topic'] = array(
-                '#type' => 'item',
-                '#title' => $index.'.'.$question->topic,
-            );
-            if ($question->image) {
-              global $base_url;
-              $form[$question->id]['image'] = array(
-                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
-              );
-            }
-            $form[$question->id][$question->id] = array(
-                '#type' => 'radios',
-                '#options' => array("错误","正确"),
-            );
-        } elseif ($question->type == 'multiple_option') {
-            if ($flags['multiple_option'] == 0) {
-              $flags['multiple_option'] = 1;
-              $form['multiple_option'] = array(
-                '#type' => 'item',
-                '#title' => '多选题'
-              );
-            }
-            $form[$question->id][$question->id.'topic'] = array(
-                '#type' => 'item',
-                '#title' => $index.'.'.$question->topic,
-            );
-            if ($question->image) {
-              global $base_url;
-              $form[$question->id]['image'] = array(
-                '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
-              );
-            }
-            $options = unserialize($question->option_a);
-            foreach ($options as $key=>$option) {
-                $form[$question->id][$question->id.'-'.$key] = array(
-                    '#type' => 'checkbox',
-                    '#title' => $option
-                ); 
-            }
-        } else {
-            krumo::dump("unknown question type");
-        }
-        $index ++;
+  //分组标题打印flag
+  $flags['text'] = 0;
+  $flags['option'] = 0;
+  $flags['true_false'] = 0;
+  $flags['multiple_option'] = 0;
+  //将题目输出到表单
+  $index = 1;
+  while($question = db_fetch_object($result)){
+    //为题目创建form:(区分选择题＆问答题)
+    if ($question->type == 'text') {
+      if ($flags['text'] == 0) {
+        $flags['text'] = 1;
+        $form['text'] = array(
+          '#type' => 'item',
+          '#title' => '问答题'
+          );
+      }
+      //问答题
+      //krumo::dump("text");
+      $form[$question->id][$question->id.'topic'] = array(
+        '#type' => 'item',
+        '#title' => $index.'.'.$question->topic,
+        );
+      if ($question->image) {
+        global $base_url;
+        $form[$question->id]['image'] = array(
+          '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+          );
+      }
+      $form[$question->id][$question->id] = array(
+        '#type' => 'textarea',
+      //'#title' => $index.'.'.$question->topic,
+        );
+
+    } elseif ($question->type == 'option') {
+      if ($flags['option'] == 0) {
+        $flags['option'] = 1;
+        $form['option'] = array(
+          '#type' => 'item',
+          '#title' => '选择题'
+          );
+      }
+      //选择题
+      $form[$question->id][$question->id.'topic'] = array(
+        '#type' => 'item',
+      //'#default_value' => '1',
+        '#title' => $index.'.'.$question->topic,
+        );
+      if ($question->image) {
+        global $base_url;
+        $form[$question->id]['image'] = array(
+          '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+          );
+      }
+      $arr = unserialize($question->option_a);
+      $form[$question->id][$question->id] = array(
+        '#type' => 'radios',
+        '#options' => $arr,
+        );
+    } elseif ($question->type == 'true_false') {
+      if ($flags['true_false'] == 0) {
+        $flags['true_false'] = 1;
+        $form['true_false'] = array(
+          '#type' => 'item',
+          '#title' => '判断题'
+          );
+      }
+      $form[$question->id][$question->id.'topic'] = array(
+        '#type' => 'item',
+        '#title' => $index.'.'.$question->topic,
+        );
+      if ($question->image) {
+        global $base_url;
+        $form[$question->id]['image'] = array(
+          '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+          );
+      }
+      $form[$question->id][$question->id] = array(
+        '#type' => 'radios',
+        '#options' => array("错误","正确"),
+        );
+    } elseif ($question->type == 'multiple_option') {
+      if ($flags['multiple_option'] == 0) {
+        $flags['multiple_option'] = 1;
+        $form['multiple_option'] = array(
+          '#type' => 'item',
+          '#title' => '多选题'
+          );
+      }
+      $form[$question->id][$question->id.'topic'] = array(
+        '#type' => 'item',
+        '#title' => $index.'.'.$question->topic,
+        );
+      if ($question->image) {
+        global $base_url;
+        $form[$question->id]['image'] = array(
+          '#value' => "<img src=\"".$base_url.'/'.$question->image."\" />",
+          );
+      }
+      $options = unserialize($question->option_a);
+      foreach ($options as $key=>$option) {
+        $form[$question->id][$question->id.'-'.$key] = array(
+          '#type' => 'checkbox',
+          '#title' => $option
+          ); 
+      }
+    } else {
+      krumo::dump("unknown question type");
     }
+    $index ++;
+  }
 
-    //krumo::dump($form);
-	$form['#validate'] = array('student_all_validate');
-	$form['submit'] = array(
-		'#type' => 'submit',
-		'#value' => '提交',
-		'#submit' => array('student_all_submit'),
-	);
-	
-	return $form;
+  $form['#validate'] = array('student_all_validate');
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => '提交',
+    '#submit' => array('student_all_submit'),
+    );
+  return $form;
 }
 
 /*
@@ -906,14 +914,17 @@ function student_all_submit(&$form,&$form_state){
         //krumo::dump($answers [$question]);
     }
 
+    $time_used = $_POST['time_used'];
+    
     //将答案序列化存入数据库中
-    db_query("INSERT INTO {answer} (id,answers,student_id,questionpaper_id,stat,score)
-            VALUES(null,'%s',%d, %d, %d, %d)",
+    db_query("INSERT INTO {answer} (id,answers,student_id,questionpaper_id,stat,score,time_used)
+            VALUES(null,'%s',%d, %d, %d, %d, %d)",
             serialize($answers),
             $user->uid,
             $questionpaper_id,
             0,
-            0);
+            NULL,
+            $time_used);
     $answer_id = db_last_insert_id('answer','id');
 
     //触发自动化判卷
@@ -998,7 +1009,7 @@ function student_all_submit(&$form,&$form_state){
 
 
 	if(db_last_insert_id('answer','id')){
-		drupal_set_message('Successfull input');
-		
+		drupal_set_message('试卷提交成功');
+    $form_state['redirect'] = 'student/paper/list';
 	}
 }

@@ -28,6 +28,12 @@
             </div>
         </div>
     </fieldset>
+    <fieldset>
+        <label for="edit-title">答题时间(分钟)：
+            <span class="form-required" title="此项必填。">*</span>
+        </label>
+        <input type="text" maxlength="128" name="timelimit" id="edit-timelimit" size="10" value="60" class="form-text required">
+    </fieldset>
     <fieldset id="class-option">
         <legend>班级：</legend>
         <?php foreach ($params['classes'] as $key => $value): ?>

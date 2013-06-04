@@ -332,8 +332,6 @@ function update_question_submit(&$form,&$form_state){
   $chapters = get_chapters($course);
   $chapter = $chapters[$chapter_index];
 
-  krumo::dump($_POST);
-
   $a = $form_state['values']['option_A'];
   $b = $form_state['values']['option_B'];
   $c = $form_state['values']['option_C'];
@@ -405,7 +403,6 @@ function question_remove($id) {
 
 //试题编辑接口
 function question_edit($id) {
-  krumo::dump($id);
     //从数据库获取 question 对象
   $result = db_query('SELECT * FROM question WHERE id = %d', intval($id));
 
@@ -413,7 +410,6 @@ function question_edit($id) {
   while ($q = db_fetch_object($result)) {
     $question = $q;
   }
-  krumo::dump($question->type);
     //根据 question 对象类型 (问答题:text/选择题:option),进行不同的页面跳转
   if ($question->type == "text") {
         //跳转至问答题页面
@@ -423,7 +419,6 @@ function question_edit($id) {
     
   } elseif ($question->type == "option") {
     //跳转至选择题页面
-    krumo::dump($question);
     $output = drupal_get_form('teacher_option_question_form',$question);
   } elseif ($question->type == "multiple_option") {
     $output = drupal_get_form('teacher_multiple_option_question_form',$question);
