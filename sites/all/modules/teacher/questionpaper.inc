@@ -48,6 +48,11 @@ function teacher_add_auto_questionpaper_submit($post){
     drupal_set_message('请选择试卷目标班级','error');
     return;
   }
+
+  if (empty($post['timelimit'])) {
+    drupal_set_message('请填写答题时间','error');
+    return;
+  }
     
   //检验总题数大于0
   $totleQuestionCount = 0;
@@ -101,8 +106,10 @@ function teacher_add_auto_questionpaper_submit($post){
 
   $classId = serialize($post['class_ids']);
 
-  db_query("INSERT INTO {questionpaper} (title,class_id,questions)
-            VALUES('%s','%s','%s')", $post['title'], $classId, $paper);
+  $timelimit = intval($post['timelimit']);
+
+  db_query("INSERT INTO {questionpaper} (title,class_id,questions,timelimit)
+            VALUES('%s','%s','%s','%d')", $post['title'], $classId, $paper, $timelimit);
 
   if(db_last_insert_id('questionpaper', 'pid')){
     drupal_set_message('试卷生成成功!');
@@ -154,7 +161,6 @@ function generateQuestionPaper($params)
     //通过章节id查询章节名称
     $chapters = get_chapters($params['course']);
     $chapterQuery = $chapters[$key];
-    krumo::dump($params['paper_type']);
     $result = db_query('SELECT * FROM {question} WHERE course = "%s" AND chapter = "%s" AND paper_type = "%s"', $params['course'], $chapterQuery, $params['paper_type']);
     
     while($question = db_fetch_object($result)) {
@@ -241,6 +247,12 @@ function teacher_manually_questionpaper_form(&$form_state){
     $form['options']['title'] = array(
             '#title' => '试卷名称',
             '#type' => 'textfield',
+    ); 
+
+    $form['options']['timelimit'] = array(
+            '#title' => '答题时间(分钟)',
+            '#type' => 'textfield',
+            '#default_value' => 60, 
     ); 
 
     $form['options']['available_class_id'] = array();
@@ -346,14 +358,26 @@ function teacher_questionpaper_submit(&$form,&$form_state){
     
     //todo:表单验证
     if (!$selected_class) {
-        krumo::dump("班级未选择");
-        return;
+      drupal_set_message('请选择班级','error');
+      return;
+    }
+
+    //检验表单提交项
+    if (empty($form_state['values']['options']['title'])) {
+      drupal_set_message('请填写试卷标题','error');
+      return;
+    }
+
+    if (empty($form_state['values']['options']['timelimit'])) {
+      drupal_set_message('请填写答题时间','error');
+      return;
     }
 
     //将试卷所对应的班级进行序列化
     $selected_class = serialize($selected_class);
 
     $title = $form_state['values']['options']['title'];
+    $timelimit = $form_state['values']['options']['timelimit'];
 
     $h = db_result(db_query("select id from {question} limit 0,1"));
     $e = db_result(db_query("select id from {question} order by id desc limit 0,1"));
@@ -366,8 +390,8 @@ function teacher_questionpaper_submit(&$form,&$form_state){
         }
     }
 
-    $query = db_query("insert into {questionpaper} (class_id,questions,title)
-            values ('%s','%s','%s')",$selected_class,serialize($questions),$title);
+    $query = db_query("insert into {questionpaper} (class_id,questions,title,timelimit)
+            values ('%s','%s','%s','%d')",$selected_class,serialize($questions),$title,$timelimit);
     if($query) {
       drupal_set_message('试卷生成成功！');
       $form_state['redirect'] = 'teacher/questionpaper/manage';
@@ -410,6 +434,7 @@ function teacher_question_paper_list(&$form_state){
             $form[$res->pid]['#config'] = (array)$res;
             $form[$res->pid]['pid'] = array('#value'=>check_plain($res->pid));
             $form[$res->pid]['title'] = array('#value'=>check_plain($res->title));
+            $form[$res->pid]['timelimit'] = array('#value'=>check_plain($res->timelimit));
             //todo:对应班级加url
             $class_id = implode(',', unserialize($res->class_id));
             $form[$res->pid]['class_id'] = array('#value'=>check_plain($class_id));
@@ -436,6 +461,7 @@ function theme_teacher_question_paper_list($form){
             $row = array();
             $row[] = drupal_render($vocabulary['pid']);
             $row[] = drupal_render($vocabulary['title']);
+            $row[] = drupal_render($vocabulary['timelimit']);
             $row[] = drupal_render($vocabulary['class_id']);
             $row[] = drupal_render($vocabulary['check']);
             if(isset($vocabulary['weight'])){
@@ -449,7 +475,7 @@ function theme_teacher_question_paper_list($form){
         $rows = array(array('data'=>t('没有找到试卷'),'colspan'=>2));
     }
 
-    $header = array(t('试卷ID'),t('试卷名称'),t('班级'),t('编辑'));
+    $header = array(t('试卷ID'),t('试卷名称'),t('时间限制'),t('班级'),t('编辑'));
     if(isset($form['submit'])){
         $header[] = t('Weight');
         drupal_add_tabledrag('taxonomy','order','sibling','vocabulary-weight');
@@ -471,6 +497,7 @@ function questionpaper_answer_list(&$form_state, $questionpaper_id){
   foreach($results as $res){
     $form['#items'][$res->id]['student_id'] = array('#value'=>check_plain($res->student_id));
     $form['#items'][$res->id]['name'] = array('#value'=>check_plain($res->name));
+    $form['#items'][$res->id]['time_used'] = array('#value'=>check_plain($res->time_used));
     $form['#items'][$res->id]['stat'] = array('#value'=>check_plain($res->stat));
     $form['#items'][$res->id]['score'] = array('#value'=>check_plain($res->score));
     $op;
@@ -508,6 +535,7 @@ function theme_questionpaper_answer_list($form){
       $row = array();
       $row[] = drupal_render($item['student_id']);
       $row[] = drupal_render($item['name']);
+      $row[] = drupal_render($item['time_used']);
       $row[] = drupal_render($item['stat']);
       $row[] = drupal_render($item['score']);
       $row[] = drupal_render($item['operation']);
@@ -518,7 +546,7 @@ function theme_questionpaper_answer_list($form){
     $rows = array(array('data' => t('没有提交记录'),'colspan'=>2));
   }
 
-  $header = array(t('学号'),t('姓名'),t('批改状态'),t('得分'),t('操作'));
+  $header = array(t('学号'),t('姓名'),t('用时'),t('批改状态'),t('得分'),t('操作'));
 
 
   return theme('table',$header,$rows).drupal_render($form);

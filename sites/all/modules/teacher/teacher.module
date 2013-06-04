@@ -1103,8 +1103,8 @@ function teacher_question_list_submit(){
 function teacher_question_list_all(&$form_state, $op){
 	$form = array();
 
-    //获取问题列表
-    $questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$op"));  
+  //获取问题列表
+  $questions = db_result(db_query("SELECT questions FROM {questionpaper} WHERE pid=$op"));  
 	$questions = unserialize($questions);
 
 	//从数据库中获取question的详细信息
@@ -1155,7 +1155,7 @@ function teacher_question_list_all(&$form_state, $op){
                 ); 
             }
         } else {
-            krumo::dump("error");
+          drupal_set_message('数据异常，请重试。','error');
         }
         $index ++;
 
