@@ -616,7 +616,7 @@ function student_cisco_bind_submit($form, &$form_state) {
   $class = $user->class;
   //todo: 使用like对班级进行模糊匹配,可能会引入bug;
   //在没有班级实体的情况下,暂用此这种方案
-	$result = pager_query("SELECT * FROM {questionpaper} WHERE class_id LIKE '%$class%'", 20, 0, NULL);
+	$result = pager_query("SELECT * FROM {questionpaper} WHERE class_id LIKE '%$class%' ORDER BY pid DESC", 20, 0, NULL);
 	
 	while($term = db_fetch_object($result)){
 		$results[] = $term;

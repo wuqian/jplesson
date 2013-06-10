@@ -418,10 +418,10 @@ function teacher_question_paper_list(&$form_state){
 
     $class = '所有';
     if($class == '所有'){
-        $result = pager_query("SELECT * FROM {questionpaper}", 20, 0, NULL);
+        $result = pager_query("SELECT * FROM {questionpaper} ORDER BY pid DESC", 20, 0, NULL);
     }
     else {
-        $result = pager_query("SELECT * FROM {questionpaper} where class_id = '$class'", 20, 0, NULL);
+        $result = pager_query("SELECT * FROM {questionpaper} where class_id = '$class' ORDER BY pid DESC", 20, 0, NULL);
     }
     
     while($term = db_fetch_object($result)){
