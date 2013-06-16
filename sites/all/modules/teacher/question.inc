@@ -27,12 +27,11 @@ function theme_teacher_question_list($form){
   );
 
   $rows = array();
-    // $output = drupal_render($form['options']);
+  // $output = drupal_render($form['options']);
   if (isset($form['id']) && is_array($form['id'])) {
     foreach (element_children($form['id']) as $key) {
         //krumo::dump($form['operations'][$key]);
         $row = array();
-
         $row [] = drupal_render($form['id'][$key]);
         $row [] = drupal_render($form['topic'][$key]);
         $type = drupal_render($form['type'][$key]);
@@ -319,6 +318,7 @@ function update_question_submit(&$form,&$form_state){
   $level = $_POST['level'];
   $id = $form_state['values']['id'];
   $type = $form_state['values']['type'];
+  $paper_type = $form_state['values']['paper_type'];
 
   $dest = file_directory_path() . '/upload';
   $file = file_save_upload('upload', array(), $dest);
@@ -342,7 +342,7 @@ function update_question_submit(&$form,&$form_state){
     //UPDATE 表名称 SET 列名称 = 新值 WHERE 列名称 = 某值
     //Ex: UPDATE Person SET Address = 'Zhongshan 23', City = 'Nanjing' WHERE LastName = 'Wilson'
   $ret = db_query("UPDATE question SET topic = '%s', option_a = '%s', correct = '%d', 
-    course = '%s', type = '%s', chapter = '%s', score = %d, level = %d, image = '%s' where id = %d",
+    course = '%s', type = '%s', chapter = '%s', score = %d, level = %d, paper_type = '%s',image = '%s' where id = %d",
     $form_state['values']['topic'],
     $con,
     $_POST['radios'],
@@ -351,6 +351,7 @@ function update_question_submit(&$form,&$form_state){
     $chapter,
     intval($score),
     intval($level),
+    $paper_type,
     $file->filepath,
     intval($id)
     );
@@ -367,11 +368,25 @@ function update_question_submit(&$form,&$form_state){
 //新增问题接口
 function add_question_submit(&$form,&$form_state){
   $course = $_POST['course'];
-  $chapter = $_POST[$course];
+  $chapter_index = $_POST[$course];
   $score =  $_POST['score'];
   $level = $_POST['level'];
+  $id = $form_state['values']['id'];
+  $type = $form_state['values']['type'];
+  $paper_type = $form_state['values']['paper_type'];
 
-  //序列化数组
+  $dest = file_directory_path() . '/upload';
+  $file = file_save_upload('upload', array(), $dest);
+  
+  if ($file) {
+    $filepath = $file->filepath;
+  } else {
+    $filepath = NULL;
+  }
+
+  $chapters = get_chapters($course);
+  $chapter = $chapters[$chapter_index];
+
   $a = $form_state['values']['option_A'];
   $b = $form_state['values']['option_B'];
   $c = $form_state['values']['option_C'];
@@ -379,12 +394,18 @@ function add_question_submit(&$form,&$form_state){
   $teachersubject = array($a,$b,$c,$d);
   $con = serialize($teachersubject);
 
-    //问题类型:option/text
-  $type = $form_state['values']['type'];
-
-  db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level)
-    VALUES(null,'%s','%s','%d','%s','%s','%s','%d','%d')",
-    $form_state['values']['topic'],$con,$_POST['radios'],$course,$type,$chapter,intval($score),intval($level));
+  db_query("INSERT INTO {question} (id,topic,option_a,correct,course,type,chapter,score,level,paper_type,image)
+    VALUES(null,'%s','%s','%d','%s','%s','%s','%d','%d','%s','%s')",
+    $form_state['values']['topic'],
+    $con,
+    $_POST['radios'],
+    $course,
+    $type,
+    $chapter,
+    intval($score),
+    intval($level),
+    $paper_type,
+    $file->filepath);
 
   if(db_last_insert_id('question', 'id')){
     drupal_set_message('Successful input');

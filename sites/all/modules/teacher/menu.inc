@@ -135,10 +135,24 @@ function teacher_menu() {
         'type' => MENU_CALLBACK,
     );
     //试题录入
+    $items['teacher/question/add/true_false']=array(
+        'title' => t('选择题录入'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('teacher_true_false_question_form'),
+        'access arguments' => array('access teacher pages'),
+        'type' => MENU_CALLBACK,
+    );
     $items['teacher/question/add/option']=array(
         'title' => t('选择题录入'),
         'page callback' => 'drupal_get_form',
         'page arguments' => array('teacher_option_question_form'),
+        'access arguments' => array('access teacher pages'),
+        'type' => MENU_CALLBACK,
+    );
+    $items['teacher/question/add/multiple_option']=array(
+        'title' => t('选择题录入'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('teacher_multiple_option_question_form'),
         'access arguments' => array('access teacher pages'),
         'type' => MENU_CALLBACK,
     );

@@ -112,9 +112,12 @@ function teacher_task_list() {
   $menu_items['学生自测题库'] = array(
   	'管理学生自测题库',
   	array(
+      l('添加判断题目','teacher/question/add/true_false'),
+      l('添加选择题目','teacher/question/add/option'),  
+      l('添加多选题目','teacher/question/add/multiple_option'),    
+      l('添加问答题目','teacher/question/add/text'),  
       l('试题管理','teacher/question/manage'),
       l('批量导入试题库', 'teacher/question/import'),
-  		//l('添加题目','teacher/topic/add'),
   		l('手动生成试卷','teacher/questionpaper/add/manually'),
       l('自动生成试卷','teacher/questionpaper/add/auto'),
   		l('查看试卷和提交记录','teacher/questionpaper/manage'),
