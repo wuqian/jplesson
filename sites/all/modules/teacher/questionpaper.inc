@@ -221,6 +221,16 @@ function teacher_add_manually_questionpaper()
 
 function teacher_manually_questionpaper_form(&$form_state){
     drupal_add_css(drupal_get_path('module', 'teacher') .'/teacher.css', 'module', 'all', FALSE);
+    $header = array(
+      array('data' => t('试题编号'), 'field' => 'id', 'sort' => 'asc'),
+      array('data' => t('试题内容'), 'field' => 'topic', 'sort' => 'asc'),
+      array('data' => t('试题类型'), 'field' => 'type', 'sort' => 'asc'),
+      array('data' => t('试题所属课程'), 'field' => 'course', 'sort' => 'asc'),
+      array('data' => t('试题所属章节'), 'field' => 'chapter', 'sort' => 'asc'),
+      array('data' => t('试题分值'), 'field' => 'score', 'sort' => 'asc'),
+      array('data' => t('试题难度等级'), 'field' => 'level', 'sort' => 'asc'),
+    );
+
     $form = array();
     $form = array(
         '#attributes' => array('class' => 'teacher-all-options')
@@ -229,12 +239,16 @@ function teacher_manually_questionpaper_form(&$form_state){
     //试题科目
     $course = $_SESSION['teacher_choice_filter'][0];
     $paper_type = $_SESSION['teacher_choice_filter'][1];
+
+    $sql = '';
     if($course == '所有'){
-        $result = pager_query("SELECT * FROM {question} where paper_type = '".$paper_type."'", 20, 0, NULL);
+      $sql = "SELECT * FROM question where paper_type = '".$paper_type."'";
     } else {
-        $result = pager_query("SELECT * FROM {question} where paper_type = '".$paper_type."' and course = '".$course."'", 20, 0, NULL);
+      $sql = "SELECT * FROM question where paper_type = '".$paper_type."' and course = '".$course."'";
     }
-    
+    $sql .= tablesort_sql($header);
+    $result =  pager_query($sql, 50, 0, 10, NULL);
+
     $filters = teacher_students_filters();  
     $filters1 = teacher_students_type_filters();
     $form = array('#tree' => TRUE);
@@ -278,6 +292,8 @@ function teacher_manually_questionpaper_form(&$form_state){
             $form[$res->id]['id'] = array('#type' => 'checkbox','#title' => check_plain($res->id));
             $form[$res->id]['topic'] = array('#value'=>check_plain($res->topic));
             $form[$res->id]['type'] = array('#value'=>check_plain($res->type));
+            $form[$res->id]['course'] = array('#value'=>check_plain($res->course));
+            $form[$res->id]['chapter'] = array('#value'=>check_plain($res->chapter));
             $form[$res->id]['score'] = array('#value'=>check_plain($res->score));
             $form[$res->id]['level'] = array('#value'=>check_plain($res->level));
             $form[$res->id]['paper_type'] = array('#value'=>check_plain($res->paper_type));
@@ -299,7 +315,16 @@ function teacher_manually_questionpaper_form(&$form_state){
 }
 
 function theme_teacher_manually_questionpaper_form($form){
-    $header = array(t('编号'),t('试题列表'),t('试题类型'),t('分值'),t('难度'),t('试卷类型'));
+    $header = array(
+      array('data' => t('试题编号'), 'field' => 'id', 'sort' => 'asc'),
+      array('data' => t('试题内容'), 'field' => 'topic', 'sort' => 'asc'),
+      array('data' => t('试题类型'), 'field' => 'type', 'sort' => 'asc'),
+      array('data' => t('试题所属课程'), 'field' => 'course', 'sort' => 'asc'),
+      array('data' => t('试题所属章节'), 'field' => 'chapter', 'sort' => 'asc'),
+      array('data' => t('试题分值'), 'field' => 'score', 'sort' => 'asc'),
+      array('data' => t('试题难度等级'), 'field' => 'level', 'sort' => 'asc'),
+      array('data' => t('试题试卷类型'), 'field' => 'paper_type', 'sort' => 'asc'),
+    );
 
     $rows = array();
     $output = drupal_render($form['options']);
@@ -309,6 +334,7 @@ function theme_teacher_manually_questionpaper_form($form){
             $row = array();
             $row[] = drupal_render($vocabulary['id']);
             $row[] = drupal_render($vocabulary['topic']);
+            
 
             $type = drupal_render($vocabulary['type']);
             if ($type == 'text') {
@@ -322,7 +348,8 @@ function theme_teacher_manually_questionpaper_form($form){
             } else {
                 $row[] = t('type unknown');
             }
-
+            $row[] = drupal_render($vocabulary['course']);
+            $row[] = drupal_render($vocabulary['chapter']);
             $row[] = drupal_render($vocabulary['score']);
             $row[] = drupal_render($vocabulary['level']);
             $row[] = drupal_render($vocabulary['paper_type']);
