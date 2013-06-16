@@ -28,7 +28,7 @@ $(function function_name(argument) {
 
         //获取点击试题分数
         var row = $(this).closest('tr');
-        var score = row.children('td:nth-child(4)').html();
+        var score = row.children('td:nth-child(6)').html();
         score = parseInt(score);
         
         questionList[questionId]['score'] = score;
